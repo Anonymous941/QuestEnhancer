@@ -18,6 +18,17 @@
         <meta-data
             android:name="xposedscope"
             android:resource="@array/xposed_scope" />
+
+        <!-- Quest 1 Manager: a normal 2D panel, opened from the app library. -->
+        <activity
+            android:name=".manager.ManagerActivity"
+            android:label="Quest Enhancer"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>
