@@ -1,0 +1,6 @@
+id=q1_steamlink_usb
+name=Quest 1 wired Steam Link (USB networking)
+version=v1.3
+versionCode=4
+author=Gregory Anderson
+description=Turns on USB networking (NCM) so Steam Link streams over the cable like newer headsets: headset 10.86.13.37/29, PC gets 10.86.13.38 by DHCP. Rooted Quest 1 only.

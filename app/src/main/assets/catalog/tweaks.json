@@ -640,6 +640,41 @@
       ]
     },
     {
+      "id": "wired-steamlink",
+      "name": "Wired Steam Link",
+      "area": "Streaming",
+      "summary": "Fix 13: Steam Link streams over the USB cable, with Wi-Fi as a backup. The headset gets 10.86.13.37 on the cable and gives the PC 10.86.13.38. Needs the patched Steam Link app from misteranderson91's patcher, made from your own SteamVR copy.",
+      "author": "misteranderson91",
+      "url": "https://github.com/misteranderson91/quest1-steamlink-patcher",
+      "licence": "MIT",
+      "risk": "reboot",
+      "after": "reboot",
+      "check": "m=/data/adb/modules/q1_steamlink_usb; [ -d $m ] || exit 3; if [ -f $m/disable ]; then echo module=off; else echo module=on; fi; if ip -4 addr show usb0 2>/dev/null | grep -q 'inet 10.86.13.37/'; then echo cable=up; else echo cable=down; fi",
+      "install": "Not installed: flash 13-wired-steamlink-rN.zip in Magisk, then restart. You also need Steam Link patched for the Quest 1.",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "USB networking on",
+          "state": "^module=on$",
+          "on": "rm -f /data/adb/modules/q1_steamlink_usb/disable",
+          "off": "touch /data/adb/modules/q1_steamlink_usb/disable",
+          "hint": "Wireless streaming works without it"
+        },
+        {
+          "type": "button",
+          "label": "Cable link",
+          "on": "Check",
+          "run": "if ip -4 addr show usb0 2>/dev/null | grep -q 'inet 10.86.13.37/'; then echo 'Cable link up: headset 10.86.13.37'; else echo 'No cable link (plug in the USB cable)'; fi; tail -n 3 /data/adb/q1_steamlink_usb.log 2>/dev/null"
+        },
+        {
+          "type": "button",
+          "label": "Steam Link",
+          "on": "Open",
+          "run": "pm path com.valvesoftware.steamlinkvr >/dev/null 2>&1 || { echo 'Steam Link not installed: patch it with the patcher first'; exit 0; }; monkey -p com.valvesoftware.steamlinkvr -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; echo 'Opening Steam Link'"
+        }
+      ]
+    },
+    {
       "id": "adb-port",
       "name": "Wireless adb on port 5555",
       "area": "System fixes",

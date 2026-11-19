@@ -38,6 +38,7 @@ Each fix has its own folder with:
 | [10-passthrough-tint](fixes/10-passthrough-tint) | Colour tint for the black and white passthrough | Juspertinry's q1_ptcolor (MIT), unchanged; not yet on headset |
 | [11-charging-sound](fixes/11-charging-sound) | Your own plug-in sound (or any UI sound), `qesound` | Our own, after a Discord tip; not yet on headset |
 | [12-backlight](fixes/12-backlight) | Holds the display brightness at a chosen value while the display is on | Our own, after a Discord tip; PC-tested, not yet on headset |
+| [13-wired-steamlink](fixes/13-wired-steamlink) | Steam Link over the USB cable (USB networking), with the patched Steam Link | misteranderson91's q1_steamlink_usb (MIT), unchanged; not yet on headset |
 
 ## Apps
 
@@ -57,6 +58,7 @@ push (Actions tab).
 - [LucentW](https://github.com/LucentW/systemux-accountless): systemux-accountless (fix 04 fetches it; not copied here).
 - [iqiyi/xHook](https://github.com/iqiyi/xHook) (MIT): used by the cast shim, fetched at build time.
 - [Juspertinry/q1-modules](https://github.com/Juspertinry/q1-modules) (MIT): q1_led (fix 09 builds on it) and q1_ptcolor (fix 10, unchanged).
+- [misteranderson91/quest1-steamlink-patcher](https://github.com/misteranderson91/quest1-steamlink-patcher) (MIT): q1_steamlink_usb (fix 13, unchanged); the Steam Link patcher itself is linked, not included.
 - mlsplays and the Monterey Club Discord: LED colour control/cycle and Police LED ideas (fix 09; ideas only, no code).
 
 ## Licence
