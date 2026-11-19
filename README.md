@@ -54,6 +54,8 @@ push (Actions tab).
 
 ## Credits
 
+Every community method we use or link, with who posted it: [CREDITS.md](CREDITS.md).
+
 - [Anonymous941](https://github.com/Anonymous941/QuestEnhancer): QuestEnhancer.
 - [LucentW](https://github.com/LucentW/systemux-accountless): systemux-accountless (fix 04 fetches it; not copied here).
 - [iqiyi/xHook](https://github.com/iqiyi/xHook) (MIT): used by the cast shim, fetched at build time.
