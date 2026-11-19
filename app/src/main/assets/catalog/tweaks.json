@@ -739,6 +739,34 @@
       ]
     },
     {
+      "id": "pair-controllers",
+      "name": "Pair controllers",
+      "area": "Controllers",
+      "summary": "Pairs a Touch controller from the headset with Meta's pairing_ctl, no phone app. Each button opens a 15 second pairing window for that hand.",
+      "author": "Uzi (Monterey Club)",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/blob/main/CREDITS.md",
+      "licence": "post",
+      "risk": "safe",
+      "check": "p=$(command -v pairing_ctl) || exit 3; echo \"tool=$p\"",
+      "install": "pairing_ctl isn't on this firmware, so pairing from here isn't available.",
+      "controls": [
+        {
+          "type": "button",
+          "label": "Right controller",
+          "on": "Pair",
+          "run": "pairing_ctl start -r 0 -t 15 2>&1; echo \"done (exit $?)\"",
+          "hint": "Starts a 15 s pairing window: put the controller in pairing mode first"
+        },
+        {
+          "type": "button",
+          "label": "Left controller",
+          "on": "Pair",
+          "run": "pairing_ctl start -l 0 -t 15 2>&1; echo \"done (exit $?)\"",
+          "hint": "Starts a 15 s pairing window: put the controller in pairing mode first"
+        }
+      ]
+    },
+    {
       "id": "wired-steamlink",
       "name": "Wired Steam Link",
       "area": "Streaming",

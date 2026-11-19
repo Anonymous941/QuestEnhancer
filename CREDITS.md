@@ -26,7 +26,7 @@ posted). Discord names are as they appear on the posts.
 | Quest 1 steamlink patcher | Uzi, credits to Mister Anderson | [misteranderson91/quest1-steamlink-patcher](https://github.com/misteranderson91/quest1-steamlink-patcher) (MIT) | Fix 13 is its USB module, unchanged; the patcher is linked |
 | Quest Disable Microphone Processing | Lexie | module (post) | Planned: audio module |
 | System-wide audio effects patch | Juspertinry | q1-modules q1_audiofx (MIT) | Planned: audio module |
-| Pair controllers using ADB | Uzi | post | Planned: Manager pairing button |
+| Pair controllers using ADB | Uzi | post | Manager: Controllers page, a Pair button per hand |
 | Factory setup skip (bypass NUX) | Juspertinry | post | Planned: Manager button |
 | Activate hand tracking without login | rhkdnjs | post | Planned: Manager switch |
 | 90hz mod [v50 only] | Juspertinry | q1-modules q1_90hz (MIT) | Linked: needs a patched boot image |
