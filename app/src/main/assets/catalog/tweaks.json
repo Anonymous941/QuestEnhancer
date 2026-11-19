@@ -640,6 +640,105 @@
       ]
     },
     {
+      "id": "library-tiles",
+      "name": "Library tiles",
+      "area": "Library",
+      "summary": "Choose which of Meta's built-in tiles (Settings, Files, Dogfood, Events...) the Library shows, and show your sideloaded apps in the All list too. Hooks in SystemUX, set with system properties.",
+      "author": "Bubbagum88",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/blob/main/app/src/main/java/org/codeberg/anonymous950/questenhancer/LibraryTileHooks.kt",
+      "licence": "GPL-3.0",
+      "risk": "safe",
+      "check": "h=$(getprop persist.qe.library_hide); for t in SETTINGS FILE_MANAGER FILE_VIEWER SHARE PEOPLE MESSENGER EVENTS DOGFOOD_HUB HANDS_TUTORIAL FIT_AND_FOCUS_TUTORIAL; do case \",$h,\" in *,$t,*) echo \"tile_$t=hidden\";; *) echo \"tile_$t=shown\";; esac; done; echo \"sideloads=$(getprop persist.qe.library_sideloads)\"",
+      "controls": [
+        {
+          "type": "header",
+          "label": "Sideloaded apps"
+        },
+        {
+          "type": "switch",
+          "label": "Also in the All list",
+          "state": "^sideloads=1$",
+          "on": "setprop persist.qe.library_sideloads 1",
+          "off": "setprop persist.qe.library_sideloads 0",
+          "hint": "Under an Unknown Sources heading, after Meta's apps"
+        },
+        {
+          "type": "header",
+          "label": "Built-in tiles"
+        },
+        {
+          "type": "switch",
+          "label": "Settings",
+          "state": "^tile_SETTINGS=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e SETTINGS -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e SETTINGS -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}SETTINGS\""
+        },
+        {
+          "type": "switch",
+          "label": "Files",
+          "state": "^tile_FILE_MANAGER=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e FILE_MANAGER -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e FILE_MANAGER -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}FILE_MANAGER\""
+        },
+        {
+          "type": "switch",
+          "label": "File viewer",
+          "state": "^tile_FILE_VIEWER=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e FILE_VIEWER -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e FILE_VIEWER -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}FILE_VIEWER\""
+        },
+        {
+          "type": "switch",
+          "label": "Camera / Share",
+          "state": "^tile_SHARE=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e SHARE -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e SHARE -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}SHARE\""
+        },
+        {
+          "type": "switch",
+          "label": "People",
+          "state": "^tile_PEOPLE=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e PEOPLE -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e PEOPLE -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}PEOPLE\""
+        },
+        {
+          "type": "switch",
+          "label": "Messenger",
+          "state": "^tile_MESSENGER=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e MESSENGER -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e MESSENGER -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}MESSENGER\""
+        },
+        {
+          "type": "switch",
+          "label": "Events",
+          "state": "^tile_EVENTS=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e EVENTS -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e EVENTS -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}EVENTS\""
+        },
+        {
+          "type": "switch",
+          "label": "Dogfood",
+          "state": "^tile_DOGFOOD_HUB=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e DOGFOOD_HUB -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e DOGFOOD_HUB -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}DOGFOOD_HUB\""
+        },
+        {
+          "type": "switch",
+          "label": "Hands tutorial",
+          "state": "^tile_HANDS_TUTORIAL=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e HANDS_TUTORIAL -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e HANDS_TUTORIAL -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}HANDS_TUTORIAL\""
+        },
+        {
+          "type": "switch",
+          "label": "Fit and focus tutorial",
+          "state": "^tile_FIT_AND_FOCUS_TUTORIAL=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e FIT_AND_FOCUS_TUTORIAL -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e FIT_AND_FOCUS_TUTORIAL -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}FIT_AND_FOCUS_TUTORIAL\""
+        }
+      ]
+    },
+    {
       "id": "wired-steamlink",
       "name": "Wired Steam Link",
       "area": "Streaming",
