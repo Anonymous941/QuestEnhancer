@@ -34,6 +34,10 @@ Each fix has its own folder with:
 | [06-questenhancer](fixes/06-questenhancer) | Setting up this app: Zygisk, Vector, scope | Installed 2026-11-06; Pin and 6+ dock pins confirmed, empty-dock and accountless Library untested |
 | [07-cast-feedback-shim](fixes/07-cast-feedback-shim) | Zygisk shim for casting to dual-homed TVs | Hooks load (v5); fix itself not yet proven |
 | [08-ocms-auto-updates](fixes/08-ocms-auto-updates) | Keeps Meta's app auto-updates off | Verified over 3 days on headset (2026-11-09) |
+| [09-status-led](fixes/09-status-led) | Status LED: an effect and colour each for worn, charging, charged and asleep; settings apply live | Based on Juspertinry's q1_led (MIT); PC-tested, not yet on headset |
+| [10-passthrough-tint](fixes/10-passthrough-tint) | Colour tint for the black and white passthrough | Juspertinry's q1_ptcolor (MIT), unchanged; not yet on headset |
+| [11-charging-sound](fixes/11-charging-sound) | Your own plug-in sound (or any UI sound), `qesound` | Our own, after a Discord tip; not yet on headset |
+| [12-backlight](fixes/12-backlight) | Holds the display brightness at a chosen value while the display is on | Our own, after a Discord tip; PC-tested, not yet on headset |
 
 ## Apps
 
@@ -52,6 +56,8 @@ push (Actions tab).
 - [Anonymous941](https://github.com/Anonymous941/QuestEnhancer): QuestEnhancer.
 - [LucentW](https://github.com/LucentW/systemux-accountless): systemux-accountless (fix 04 fetches it; not copied here).
 - [iqiyi/xHook](https://github.com/iqiyi/xHook) (MIT): used by the cast shim, fetched at build time.
+- [Juspertinry/q1-modules](https://github.com/Juspertinry/q1-modules) (MIT): q1_led (fix 09 builds on it) and q1_ptcolor (fix 10, unchanged).
+- mlsplays and the Monterey Club Discord: LED colour control/cycle and Police LED ideas (fix 09; ideas only, no code).
 
 ## Licence
 

@@ -21,11 +21,11 @@ object RootShell {
         refused = false
     }
 
-    /** Seconds one command may take before the shell's `timeout` stops it (exit code 124). */
+    /** Seconds a check may take before the shell's `timeout` stops it (exit code 124). */
     const val TIMEOUT_SECONDS = 20
 
     @Synchronized
-    fun run(command: String): Result {
+    fun run(command: String, timeoutSeconds: Int = TIMEOUT_SECONDS): Result {
         if (refused) return Result(-1, "root was refused (tap Refresh to ask again)")
         if (process == null && !start()) return Result(-1, "could not start su")
         val marker = "__QE_DONE_${System.nanoTime()}__"
@@ -36,25 +36,25 @@ object RootShell {
                 val quoted = "'" + command.replace("'", "'\\''") + "'"
                 // (Plain sh if this build's toybox has no timeout.)
                 write(
-                    "if command -v timeout >/dev/null; then timeout $TIMEOUT_SECONDS sh -c $quoted; " +
+                    "if command -v timeout >/dev/null; then timeout $timeoutSeconds sh -c $quoted; " +
                         "else sh -c $quoted; fi </dev/null 2>&1\necho \"$marker \$?\"\n"
                 )
                 flush()
             }
-            readUntil(marker)
+            readUntil(marker, timeoutSeconds)
         } catch (e: Exception) {
             closed()
         }
     }
 
     /** Collects output up to the marker line; the marker carries the exit code. */
-    private fun readUntil(marker: String): Result {
+    private fun readUntil(marker: String, timeoutSeconds: Int): Result {
         val text = StringBuilder()
         while (true) {
             val line = output!!.readLine() ?: return closed()
             if (line.startsWith(marker)) {
                 val code = line.substring(marker.length).trim().toIntOrNull() ?: -1
-                if (code == 124) return Result(code, "timed out after ${TIMEOUT_SECONDS}s")
+                if (code == 124) return Result(code, "timed out after ${timeoutSeconds}s")
                 return Result(code, text.toString().trim())
             }
             text.append(line).append('\n')

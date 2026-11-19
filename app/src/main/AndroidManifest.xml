@@ -19,13 +19,21 @@
             android:name="xposedscope"
             android:resource="@array/xposed_scope" />
 
-        <!-- Quest 1 Manager: a normal 2D panel, opened from the app library. -->
+        <!-- Quest 1 Manager: a normal 2D panel, opened from the app library.
+             Landscape, and a bigger default panel than the phone-sized one
+             (VrShell reads <layout> defaultWidth/defaultHeight for 2D apps). -->
         <activity
             android:name=".manager.ManagerActivity"
             android:label="Quest Enhancer"
             android:exported="true"
+            android:screenOrientation="landscape"
+            android:resizeableActivity="true"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|keyboard|keyboardHidden|navigation|uiMode">
+            <layout
+                android:defaultWidth="1280dp"
+                android:defaultHeight="800dp"
+                android:gravity="center" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

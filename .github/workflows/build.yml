@@ -19,12 +19,27 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build
-        run: ./gradlew --no-daemon assembleRelease
+        run: ./gradlew --no-daemon assembleRelease -PciRun=${{ github.run_number }}
+
+      # QuestEnhancer-v<version>-r<run>-<short commit>[-<branch>].apk; main has no
+      # branch suffix. The artifact has the same name.
+      - name: Name the APK
+        id: name
+        run: |
+          ver=$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts)
+          ref="${{ github.head_ref || github.ref_name }}"
+          short=$(echo "${{ github.event.pull_request.head.sha || github.sha }}" | cut -c1-7)
+          name="QuestEnhancer-v$ver-r${{ github.run_number }}-$short"
+          [ "$ref" = main ] || name="$name-${ref##*/}"
+          mkdir -p out
+          cp app/build/outputs/apk/release/app-release.apk "out/$name.apk"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          ls -l out
 
       - uses: actions/upload-artifact@v4
         with:
-          name: QuestEnhancer-${{ github.sha }}
-          path: app/build/outputs/apk/release/*.apk
+          name: ${{ steps.name.outputs.name }}
+          path: out/*.apk
           if-no-files-found: error
 
   fixes:
@@ -68,16 +83,19 @@ jobs:
           cp "$base/libs/arm64-v8a/libqecastshim.so"   "$base/module/zygisk/arm64-v8a.so"
           cp "$base/libs/armeabi-v7a/libqecastshim.so" "$base/module/zygisk/armeabi-v7a.so"
           ls -l "$base/module/zygisk"
+      - name: Short commit
+        id: short
+        run: echo "sha=$(echo '${{ github.event.pull_request.head.sha || github.sha }}' | cut -c1-7)" >> "$GITHUB_OUTPUT"
       - name: Collect APKs and pack Magisk modules
         run: |
           mkdir -p out
           cp apps/devoptions/app/build/outputs/apk/debug/app-debug.apk out/devoptions-${{ github.run_number }}.apk
           for m in fixes/*/module; do
             fix=$(basename "$(dirname "$m")")
-            (cd "$m" && zip -r -X "$GITHUB_WORKSPACE/out/$fix.zip" . -x '.gitkeep' -x '*/.gitkeep')
+            (cd "$m" && zip -r -X "$GITHUB_WORKSPACE/out/$fix-r${{ github.run_number }}.zip" . -x '.gitkeep' -x '*/.gitkeep')
           done
           ls -l out
       - uses: actions/upload-artifact@v4
         with:
-          name: quest1-fixes-${{ github.run_number }}
+          name: quest1-fixes-r${{ github.run_number }}-${{ steps.short.outputs.sha }}
           path: out/

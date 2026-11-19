@@ -1,0 +1,6 @@
+id=quest1_ui_sounds
+name=Quest 1 UI sounds
+version=v1.0.0
+versionCode=1
+author=Bubbagum88 (QuestEnhancer)
+description=Replace the headset's UI sounds (the plug-in sound ChargingStarted.ogg, or any other in /system/product/media/audio/ui) with your own .ogg files. qesound command or the QuestEnhancer Manager.

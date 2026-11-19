@@ -1,0 +1,93 @@
+#!/system/bin/sh
+
+MODDIR=/data/adb/modules/questptcolor
+[ -f "$MODDIR/ptlib.sh" ] || { echo "ptcolor: module not installed"; exit 1; }
+. "$MODDIR/ptlib.sh"
+
+usage() {
+  cat <<'USAGE'
+ptcolor, Quest 1 passthrough tint
+
+  ptcolor                    show current settings
+  ptcolor set <colour>       #66CCFF or 66CCFF
+  ptcolor preset <name>      ice amber night pink warm cool none
+  ptcolor strength <0-1>     how far towards the colour
+  ptcolor brightness <0-4>   gain applied after the tint
+  ptcolor on | off           enable / restore stock passthrough
+  ptcolor apply              re-apply tint.conf as-is
+  ptcolor config             print tint.conf
+  ptcolor log                recent module log
+
+The tint lives in mrservice's passthrough sampler, so it only affects
+passthrough. Shaders are read at startup, so a change needs a reboot.
+Add -r to reboot straight away.
+USAGE
+}
+
+need_root() { [ "$(id -u)" = 0 ] || { echo "ptcolor: needs root (su -c ...)"; exit 1; }; }
+
+conf_set() {
+  grep -q "^$1=" "$CONF" 2>/dev/null \
+    && sed -i "s|^$1=.*|$1=$2|" "$CONF" \
+    || echo "$1=$2" >>"$CONF"
+}
+
+reapply() {
+  apply_tint
+  rc=$?
+  case $rc in
+    0) clear_shader_cache
+       load_config
+       if [ "$ENABLED" = 1 ]; then
+         echo "applied $TINT_COLOR -> $(colour_text "$TINT_COLOR" "$STRENGTH" "$BRIGHTNESS")"
+       else
+         echo "disabled, stock passthrough restored"
+       fi
+       if [ "$1" = "-r" ]; then echo "rebooting..."; sync; reboot
+       else echo "reboot to see it (or: ptcolor apply -r)"; fi ;;
+    1) echo "already up to date" ;;
+    *) echo "failed, see $LOG"; exit 1 ;;
+  esac
+}
+
+cmd_status() {
+  load_config
+  echo "config     $CONF"
+  echo "enabled    $ENABLED"
+  echo "colour     $TINT_COLOR"
+  echo "strength   $STRENGTH"
+  echo "brightness $BRIGHTNESS"
+  echo "computed   $(colour_text "$TINT_COLOR" "$STRENGTH" "$BRIGHTNESS")"
+  echo "build      $(getprop ro.product.device) / $(getprop ro.build.version.incremental)"
+  if [ -f "$OVERLAY" ]; then
+    echo "overlay    $OVERLAY"
+    echo "live tint  $(read_colour "$OVERLAY")"
+  else
+    echo "overlay    none (stock passthrough)"
+  fi
+  echo "rgba buf   $(getprop persist.oculus.mrservice.eyebuffer_force_rgba)"
+}
+
+case "$1" in
+  ""|status) cmd_status ;;
+  set)       need_root; [ -n "$2" ] || { echo "need a colour"; exit 1; }
+             c=$2; case "$c" in \#*) ;; *) c="#$c" ;; esac
+             conf_set TINT_COLOR "$c"; conf_set ENABLED 1; reapply "$3" ;;
+  preset)    need_root
+             case "$2" in
+               ice) c=#66CCFF ;; amber) c=#FFB347 ;; night) c=#55FF88 ;;
+               pink) c=#FF6699 ;; warm) c=#FFD9A0 ;; cool) c=#A8C8FF ;;
+               none|white) c=#FFFFFF ;;
+               *) echo "presets: ice amber night pink warm cool none"; exit 1 ;;
+             esac
+             conf_set TINT_COLOR "$c"; conf_set ENABLED 1; reapply "$3" ;;
+  strength)   need_root; conf_set STRENGTH "$2"; reapply "$3" ;;
+  brightness) need_root; conf_set BRIGHTNESS "$2"; reapply "$3" ;;
+  on)        need_root; conf_set ENABLED 1; reapply "$2" ;;
+  off)       need_root; conf_set ENABLED 0; reapply "$2" ;;
+  apply)     need_root; reapply "$2" ;;
+  config)    cat "$CONF" ;;
+  log)       [ -f "$LOG" ] && tail -n 30 "$LOG" || echo "no log yet" ;;
+  -h|--help|help) usage ;;
+  *)         echo "ptcolor: unknown command '$1'"; echo; usage; exit 1 ;;
+esac

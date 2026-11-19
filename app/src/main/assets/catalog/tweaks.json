@@ -2,16 +2,26 @@
   "version": 1,
   "tweaks": [
     {
-      "id": "qe-hooks",
-      "name": "QuestEnhancer hooks",
-      "area": "System",
-      "summary": "This app's Xposed hooks: hidden settings, dock pins, casting fixes.",
-      "author": "Anonymous941 + Bubbagum88",
-      "url": "https://github.com/Bubbagum88/QuestEnhancer",
+      "id": "os-updates",
+      "name": "Meta OS updates",
+      "area": "Updates",
+      "summary": "Keeps the headset on its rooted firmware: the OTA switch is off and the updater app is disabled. An OS update could replace the rooted boot image.",
+      "author": "PrivateQuest setup + Bubbagum88",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/08-ocms-auto-updates",
       "licence": "GPL-3.0",
       "risk": "safe",
-      "check": "sh /data/adb/modules/zygisk_vector/cli scope ls org.codeberg.anonymous950.questenhancer",
-      "onIf": "com\\.oculus\\.systemux"
+      "check": "echo \"ota=$(getprop persist.ovr.ota.enabled)\"; if pm list packages -d | grep -qx package:com.oculus.updater; then echo updater=disabled; else echo updater=enabled; fi",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "Block OS updates",
+          "state": "^ota=false\\nupdater=disabled$",
+          "on": "setprop persist.ovr.ota.enabled false; pm disable-user --user 0 com.oculus.updater",
+          "off": "resetprop -p --delete persist.ovr.ota.enabled; pm enable com.oculus.updater",
+          "hint": "OTA switch off and com.oculus.updater disabled",
+          "confirmOff": "This lets Meta install OS updates again. An update can replace the rooted boot image and undo these fixes. Allow OS updates?"
+        }
+      ]
     },
     {
       "id": "ocms-auto-updates",
@@ -22,30 +32,795 @@
       "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/08-ocms-auto-updates",
       "licence": "GPL-3.0",
       "risk": "safe",
-      "check": "S=$(sh /data/adb/modules/zygisk_vector/cli scope ls org.codeberg.anonymous950.questenhancer); E=$(pm list packages -e com.oculus.ocms); case \"$S\" in *com.oculus.ocms*) echo \"in scope\";; *) echo \"not in scope\";; esac; case \"$E\" in *com.oculus.ocms*) echo \"OCMS enabled\";; *) echo \"OCMS DISABLED\";; esac",
-      "onIf": "^in scope\\nOCMS enabled$"
+      "check": "if sh /data/adb/modules/zygisk_vector/cli scope ls org.codeberg.anonymous950.questenhancer | grep -q com.oculus.ocms; then echo \"in scope\"; else echo \"not in scope\"; fi; if pm list packages -d | grep -qx package:com.oculus.ocms; then echo \"OCMS DISABLED\"; else echo \"OCMS enabled\"; fi",
+      "after": "reboot",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "Block Meta app auto-updates",
+          "state": "^in scope$",
+          "on": "sh /data/adb/modules/zygisk_vector/cli scope set org.codeberg.anonymous950.questenhancer com.oculus.systemux/0 com.oculus.vrshell/0 com.oculus.panelapp.settings/0 com.oculus.horizon/0 com.oculus.vrcast/0 com.oculus.ocms/0",
+          "off": "sh /data/adb/modules/zygisk_vector/cli scope set org.codeberg.anonymous950.questenhancer com.oculus.systemux/0 com.oculus.vrshell/0 com.oculus.panelapp.settings/0 com.oculus.horizon/0 com.oculus.vrcast/0",
+          "hint": "QuestEnhancer's OCMS hook. OCMS itself must stay enabled.",
+          "confirmOff": "Meta's apps can update themselves again. That once broke Chats on this firmware. Allow app auto-updates?"
+        }
+      ]
     },
     {
-      "id": "led-colour",
-      "name": "Status LED colour",
-      "area": "LED and display",
-      "summary": "The current red, green and blue values of the status LED (0 to 255).",
-      "author": "community (mlsplays, FreeXR, Juspertinry)",
-      "url": "https://github.com/Juspertinry/q1-modules",
-      "licence": "n/a (read only)",
+      "id": "status-led",
+      "name": "Status LED",
+      "area": "LED",
+      "summary": "Fix 09: an effect and colour for each state of the headset. Changes apply straight away.",
+      "author": "Juspertinry (q1_led); states, colours and live settings by QuestEnhancer",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/09-status-led",
+      "licence": "MIT",
       "risk": "safe",
-      "check": "for c in red green blue; do echo \"$c $(cat /sys/class/leds/$c/brightness)\"; done"
+      "check": "questled status",
+      "install": "Not installed: flash 09-status-led-rN.zip in Magisk, then restart.",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "LED effects",
+          "state": "^enabled=1$",
+          "on": "questled on",
+          "off": "questled off",
+          "hint": "Off hands the LED back dark"
+        },
+        {
+          "type": "choice",
+          "label": "Brightness while worn",
+          "state": "^bright=(\\d+)$",
+          "run": "questled bright {value}",
+          "options": [
+            {
+              "label": "Low",
+              "value": "40"
+            },
+            {
+              "label": "Medium",
+              "value": "120"
+            },
+            {
+              "label": "High",
+              "value": "255"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Speed (rainbow and breathe)",
+          "state": "^speed=(\\d+)$",
+          "run": "questled speed {value}",
+          "options": [
+            {
+              "label": "Fast",
+              "value": "2"
+            },
+            {
+              "label": "Medium",
+              "value": "4"
+            },
+            {
+              "label": "Slow",
+              "value": "8"
+            },
+            {
+              "label": "Very slow",
+              "value": "16"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "label": "While worn"
+        },
+        {
+          "type": "choice",
+          "label": "Effect",
+          "state": "^effect=(\\w+)$",
+          "run": "questled effect {value}",
+          "options": [
+            {
+              "label": "Rainbow",
+              "value": "rainbow"
+            },
+            {
+              "label": "Battery level",
+              "value": "battery"
+            },
+            {
+              "label": "Solid",
+              "value": "solid"
+            },
+            {
+              "label": "Breathe",
+              "value": "breathe"
+            },
+            {
+              "label": "Police",
+              "value": "police"
+            },
+            {
+              "label": "Off",
+              "value": "off"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Colour",
+          "state": "^color=(#[0-9A-Fa-f]{6})$",
+          "run": "questled color '{value}'",
+          "wheel": true,
+          "options": [
+            {
+              "label": "Blue",
+              "value": "#00A0FF",
+              "swatch": "#00A0FF"
+            },
+            {
+              "label": "White",
+              "value": "#FFFFFF",
+              "swatch": "#FFFFFF"
+            },
+            {
+              "label": "Red",
+              "value": "#FF0000",
+              "swatch": "#FF0000"
+            },
+            {
+              "label": "Orange",
+              "value": "#FF6000",
+              "swatch": "#FF6000"
+            },
+            {
+              "label": "Yellow",
+              "value": "#FFD000",
+              "swatch": "#FFD000"
+            },
+            {
+              "label": "Green",
+              "value": "#00FF40",
+              "swatch": "#00FF40"
+            },
+            {
+              "label": "Purple",
+              "value": "#A000FF",
+              "swatch": "#A000FF"
+            },
+            {
+              "label": "Pink",
+              "value": "#FF2080",
+              "swatch": "#FF2080"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "label": "Charging"
+        },
+        {
+          "type": "choice",
+          "label": "Effect",
+          "state": "^charge=(\\w+)$",
+          "run": "questled charge {value}",
+          "options": [
+            {
+              "label": "Rainbow",
+              "value": "rainbow"
+            },
+            {
+              "label": "Battery level",
+              "value": "battery"
+            },
+            {
+              "label": "Solid",
+              "value": "solid"
+            },
+            {
+              "label": "Breathe",
+              "value": "breathe"
+            },
+            {
+              "label": "Police",
+              "value": "police"
+            },
+            {
+              "label": "Off",
+              "value": "off"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Colour",
+          "state": "^chargecolor=(#[0-9A-Fa-f]{6})$",
+          "run": "questled chargecolor '{value}'",
+          "wheel": true,
+          "options": [
+            {
+              "label": "Blue",
+              "value": "#00A0FF",
+              "swatch": "#00A0FF"
+            },
+            {
+              "label": "White",
+              "value": "#FFFFFF",
+              "swatch": "#FFFFFF"
+            },
+            {
+              "label": "Red",
+              "value": "#FF0000",
+              "swatch": "#FF0000"
+            },
+            {
+              "label": "Orange",
+              "value": "#FF6000",
+              "swatch": "#FF6000"
+            },
+            {
+              "label": "Yellow",
+              "value": "#FFD000",
+              "swatch": "#FFD000"
+            },
+            {
+              "label": "Green",
+              "value": "#00FF40",
+              "swatch": "#00FF40"
+            },
+            {
+              "label": "Purple",
+              "value": "#A000FF",
+              "swatch": "#A000FF"
+            },
+            {
+              "label": "Pink",
+              "value": "#FF2080",
+              "swatch": "#FF2080"
+            }
+          ]
+        },
+        {
+          "type": "switch",
+          "label": "Show while worn too",
+          "state": "^chargeworn=1$",
+          "on": "questled chargeworn on",
+          "off": "questled chargeworn off",
+          "hint": "Otherwise only while the headset sleeps"
+        },
+        {
+          "type": "header",
+          "label": "Charged, still plugged in"
+        },
+        {
+          "type": "choice",
+          "label": "Effect",
+          "state": "^full=(\\w+)$",
+          "run": "questled full {value}",
+          "options": [
+            {
+              "label": "Rainbow",
+              "value": "rainbow"
+            },
+            {
+              "label": "Battery level",
+              "value": "battery"
+            },
+            {
+              "label": "Solid",
+              "value": "solid"
+            },
+            {
+              "label": "Breathe",
+              "value": "breathe"
+            },
+            {
+              "label": "Police",
+              "value": "police"
+            },
+            {
+              "label": "Off",
+              "value": "off"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Colour",
+          "state": "^fullcolor=(#[0-9A-Fa-f]{6})$",
+          "run": "questled fullcolor '{value}'",
+          "wheel": true,
+          "options": [
+            {
+              "label": "Blue",
+              "value": "#00A0FF",
+              "swatch": "#00A0FF"
+            },
+            {
+              "label": "White",
+              "value": "#FFFFFF",
+              "swatch": "#FFFFFF"
+            },
+            {
+              "label": "Red",
+              "value": "#FF0000",
+              "swatch": "#FF0000"
+            },
+            {
+              "label": "Orange",
+              "value": "#FF6000",
+              "swatch": "#FF6000"
+            },
+            {
+              "label": "Yellow",
+              "value": "#FFD000",
+              "swatch": "#FFD000"
+            },
+            {
+              "label": "Green",
+              "value": "#00FF40",
+              "swatch": "#00FF40"
+            },
+            {
+              "label": "Purple",
+              "value": "#A000FF",
+              "swatch": "#A000FF"
+            },
+            {
+              "label": "Pink",
+              "value": "#FF2080",
+              "swatch": "#FF2080"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "label": "Asleep on battery"
+        },
+        {
+          "type": "choice",
+          "label": "Effect",
+          "state": "^sleep=(\\w+)$",
+          "run": "questled sleep {value}",
+          "options": [
+            {
+              "label": "Rainbow",
+              "value": "rainbow"
+            },
+            {
+              "label": "Battery level",
+              "value": "battery"
+            },
+            {
+              "label": "Solid",
+              "value": "solid"
+            },
+            {
+              "label": "Breathe",
+              "value": "breathe"
+            },
+            {
+              "label": "Police",
+              "value": "police"
+            },
+            {
+              "label": "Off",
+              "value": "off"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Colour",
+          "state": "^sleepcolor=(#[0-9A-Fa-f]{6})$",
+          "run": "questled sleepcolor '{value}'",
+          "wheel": true,
+          "options": [
+            {
+              "label": "Blue",
+              "value": "#00A0FF",
+              "swatch": "#00A0FF"
+            },
+            {
+              "label": "White",
+              "value": "#FFFFFF",
+              "swatch": "#FFFFFF"
+            },
+            {
+              "label": "Red",
+              "value": "#FF0000",
+              "swatch": "#FF0000"
+            },
+            {
+              "label": "Orange",
+              "value": "#FF6000",
+              "swatch": "#FF6000"
+            },
+            {
+              "label": "Yellow",
+              "value": "#FFD000",
+              "swatch": "#FFD000"
+            },
+            {
+              "label": "Green",
+              "value": "#00FF40",
+              "swatch": "#00FF40"
+            },
+            {
+              "label": "Purple",
+              "value": "#A000FF",
+              "swatch": "#A000FF"
+            },
+            {
+              "label": "Pink",
+              "value": "#FF2080",
+              "swatch": "#FF2080"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Brightness while asleep",
+          "state": "^sleepbright=(\\d+)$",
+          "run": "questled sleepbright {value}",
+          "options": [
+            {
+              "label": "Dim",
+              "value": "30"
+            },
+            {
+              "label": "Low",
+              "value": "90"
+            },
+            {
+              "label": "High",
+              "value": "255"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Turn dark after",
+          "state": "^sleeptimeout=(\\d+)$",
+          "run": "questled sleeptimeout {value}",
+          "options": [
+            {
+              "label": "30 s",
+              "value": "30"
+            },
+            {
+              "label": "90 s",
+              "value": "90"
+            },
+            {
+              "label": "10 min",
+              "value": "600"
+            },
+            {
+              "label": "Never",
+              "value": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "passthrough-tint",
+      "name": "Passthrough colour",
+      "area": "Passthrough",
+      "summary": "Fix 10: tints the black and white passthrough view. Only passthrough changes, not menus, apps or video. Made for Quest 1 v50 (build 49845030443200410) and refuses to patch any other build.",
+      "author": "Juspertinry (q1_ptcolor)",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/10-passthrough-tint",
+      "licence": "MIT",
+      "risk": "reboot",
+      "after": "reboot",
+      "check": "ptcolor status",
+      "install": "Not installed: flash 10-passthrough-tint-rN.zip in Magisk, then restart.",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "Tint passthrough",
+          "state": "^enabled\\s+1$",
+          "on": "ptcolor on",
+          "off": "ptcolor off"
+        },
+        {
+          "type": "choice",
+          "label": "Colour",
+          "state": "^colour\\s+(#[0-9A-Fa-f]{6})$",
+          "run": "ptcolor set '{value}'",
+          "options": [
+            {
+              "label": "Ice blue",
+              "value": "#66CCFF",
+              "swatch": "#66CCFF"
+            },
+            {
+              "label": "Amber",
+              "value": "#FFB347",
+              "swatch": "#FFB347"
+            },
+            {
+              "label": "Night vision",
+              "value": "#55FF88",
+              "swatch": "#55FF88"
+            },
+            {
+              "label": "Pink",
+              "value": "#FF6699",
+              "swatch": "#FF6699"
+            },
+            {
+              "label": "Warm",
+              "value": "#FFD9A0",
+              "swatch": "#FFD9A0"
+            },
+            {
+              "label": "Cool",
+              "value": "#A8C8FF",
+              "swatch": "#A8C8FF"
+            },
+            {
+              "label": "None",
+              "value": "#FFFFFF",
+              "swatch": "#FFFFFF"
+            }
+          ],
+          "wheel": true
+        },
+        {
+          "type": "choice",
+          "label": "Strength",
+          "state": "^strength\\s+(\\S+)$",
+          "run": "ptcolor strength {value}",
+          "options": [
+            {
+              "label": "Light",
+              "value": "0.4"
+            },
+            {
+              "label": "Medium",
+              "value": "0.7"
+            },
+            {
+              "label": "Full",
+              "value": "1.0"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Brightness",
+          "state": "^brightness\\s+(\\S+)$",
+          "run": "ptcolor brightness {value}",
+          "options": [
+            {
+              "label": "Normal",
+              "value": "1.0"
+            },
+            {
+              "label": "Brighter",
+              "value": "1.3"
+            },
+            {
+              "label": "Brightest",
+              "value": "1.6"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cast-shim",
+      "name": "Cast fix for dual-network TVs",
+      "area": "Casting",
+      "summary": "Fix 07: a TV with Ethernet and Wi-Fi both up sends its feedback from its other address, and Horizon's old WebRTC drops it (slow, laggy casts). The shim lets that feedback through. Not yet proven to fix it.",
+      "author": "Bubbagum88",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/07-cast-feedback-shim",
+      "licence": "GPL-3.0",
+      "risk": "safe",
+      "check": "[ -d /data/adb/modules/quest1_cast_feedback_shim ] || exit 3; echo \"shim=$(getprop debug.qe.cast_shim)\"; echo \"log=$(getprop debug.qe.cast_shim_log)\"",
+      "install": "Not installed: flash 07-cast-feedback-shim-rN.zip in Magisk, then restart.",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "Shim on",
+          "state": "^shim=1$",
+          "on": "setprop debug.qe.cast_shim 1",
+          "off": "setprop debug.qe.cast_shim 0",
+          "hint": "Until the next restart. Start a new cast after changing it."
+        },
+        {
+          "type": "switch",
+          "label": "Log what it does",
+          "state": "^log=1$",
+          "on": "setprop debug.qe.cast_shim_log 1",
+          "off": "setprop debug.qe.cast_shim_log 0"
+        }
+      ]
+    },
+    {
+      "id": "adb-port",
+      "name": "Wireless adb on port 5555",
+      "area": "System fixes",
+      "summary": "Fix 01: adb over Wi-Fi on a fixed port with no pairing, after every restart. Anyone on the same Wi-Fi can connect while it's on: use it on a trusted network.",
+      "author": "Bubbagum88",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/01-adb-fixed-port",
+      "licence": "GPL-3.0",
+      "risk": "safe",
+      "check": "echo \"port=$(getprop persist.adb.tcp.port)\"",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "Fixed port 5555",
+          "state": "^port=5555$",
+          "on": "setprop persist.adb.tcp.port 5555",
+          "off": "resetprop -p --delete persist.adb.tcp.port",
+          "hint": "Takes effect at the next restart",
+          "confirmOff": "After the next restart adb works over USB only, until you set this again. Turn it off?"
+        }
+      ]
+    },
+    {
+      "id": "chats",
+      "name": "Chats crash loop",
+      "area": "System fixes",
+      "summary": "Fix 02: Chats (com.oculus.socialplatform) needs a class this firmware doesn't have and crashes every few seconds. Disabling it stops that. Don't uninstall it: that makes Presence crash instead.",
+      "author": "Bubbagum88",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/02-chats-crashloop",
+      "licence": "GPL-3.0",
+      "risk": "safe",
+      "check": "if pm list packages -d | grep -qx package:com.oculus.socialplatform; then echo chats=disabled; else echo chats=enabled; fi",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "Chats disabled",
+          "state": "^chats=disabled$",
+          "on": "pm disable-user --user 0 com.oculus.socialplatform",
+          "off": "pm enable com.oculus.socialplatform",
+          "confirmOff": "Chats will crash every few seconds again. Enable it?"
+        }
+      ]
+    },
+    {
+      "id": "devsettings",
+      "name": "Android Developer options",
+      "area": "System fixes",
+      "summary": "Fix 03: Android's Developer options page crashed on open (SELinux kept it from reading memory info). The module allows exactly those reads.",
+      "author": "Bubbagum88",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/03-devsettings-selinux",
+      "licence": "GPL-3.0",
+      "risk": "reboot",
+      "after": "reboot",
+      "check": "m=/data/adb/modules/quest1_devsettings_fix; [ -d $m ] || exit 3; if [ -f $m/disable ]; then echo module=off; else echo module=on; fi",
+      "install": "Not installed: flash 03-devsettings-selinux-rN.zip in Magisk, then restart.",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "Fix on",
+          "state": "^module=on$",
+          "on": "rm -f /data/adb/modules/quest1_devsettings_fix/disable",
+          "off": "touch /data/adb/modules/quest1_devsettings_fix/disable"
+        },
+        {
+          "type": "button",
+          "label": "Developer options",
+          "on": "Open",
+          "run": "am force-stop com.android.settings; am start -n 'com.android.settings/.Settings$DevelopmentSettingsDashboardActivity'"
+        }
+      ]
+    },
+    {
+      "id": "boot-logo",
+      "name": "Boot logo",
+      "area": "System fixes",
+      "summary": "Fix 05: your own logo, picked at random each boot, in the boot animation instead of the Meta logo. The first ~2 s Meta logo is in signed firmware and can't change.",
+      "author": "Bubbagum88",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/05-boot-logo",
+      "licence": "GPL-3.0",
+      "risk": "reboot",
+      "after": "reboot",
+      "check": "m=/data/adb/modules/quest1_boot_logo; [ -d $m ] || exit 3; if [ -f $m/disable ]; then echo module=off; else echo module=on; fi; echo \"logos=$(ls /data/adb/modules/quest1_boot_logo/logos 2>/dev/null | grep -c '\\.png$')\"",
+      "install": "Not installed: put your logos in fixes/05-boot-logo/module/logos and flash the zip in Magisk.",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "Custom boot logo",
+          "state": "^module=on$",
+          "on": "rm -f /data/adb/modules/quest1_boot_logo/disable",
+          "off": "touch /data/adb/modules/quest1_boot_logo/disable"
+        },
+        {
+          "type": "button",
+          "label": "Pick another logo for the next boot",
+          "on": "Pick",
+          "run": "sh /data/adb/modules/quest1_boot_logo/pick.sh"
+        }
+      ]
+    },
+    {
+      "id": "ui-sounds",
+      "name": "Charging sound",
+      "area": "System fixes",
+      "summary": "Fix 11: plays your own sound when you plug the headset in (or replaces any other UI sound with qesound). Put a real .ogg file at /sdcard/QuestEnhancer/sounds/charging.ogg. Changes play after a restart.",
+      "author": "Bubbagum88, after a Monterey Club Discord tip",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/11-charging-sound",
+      "licence": "GPL-3.0",
+      "risk": "reboot",
+      "after": "reboot",
+      "check": "qesound status",
+      "install": "Not installed: flash 11-charging-sound-rN.zip in Magisk, then restart.",
+      "controls": [
+        {
+          "type": "button",
+          "label": "Use /sdcard/QuestEnhancer/sounds/charging.ogg",
+          "on": "Use",
+          "run": "qesound set ChargingStarted /sdcard/QuestEnhancer/sounds/charging.ogg"
+        },
+        {
+          "type": "button",
+          "label": "Back to Meta's sound",
+          "on": "Reset",
+          "run": "qesound reset ChargingStarted"
+        }
+      ]
     },
     {
       "id": "backlight",
-      "name": "Display backlight",
-      "area": "LED and display",
-      "summary": "The panel backlight value and its maximum.",
-      "author": "community",
-      "url": "",
-      "licence": "n/a (read only)",
+      "name": "Display brightness",
+      "area": "Display",
+      "summary": "Fix 12: holds the display backlight at a value you choose while the display is on (never while it's off). A brighter panel runs warmer and an OLED ages faster; the system's own value is the safe choice.",
+      "author": "Bubbagum88, after a Monterey Club Discord tip",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/12-backlight",
+      "licence": "GPL-3.0",
       "risk": "safe",
-      "check": "echo \"now $(cat /sys/class/leds/lcd-backlight/brightness) of $(cat /sys/class/leds/lcd-backlight/max_brightness)\""
+      "check": "if [ -d /data/adb/modules/quest1_backlight ]; then qebacklight status; else echo \"now=$(cat /sys/class/leds/lcd-backlight/brightness)\"; echo \"max=$(cat /sys/class/leds/lcd-backlight/max_brightness)\"; echo pin=missing; fi",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "Hold brightness",
+          "hint": "Needs fix 12 (12-backlight-rN.zip). Applies within 2 s.",
+          "state": "^pin=1$",
+          "on": "qebacklight pin on",
+          "off": "qebacklight pin off"
+        },
+        {
+          "type": "choice",
+          "label": "Value",
+          "state": "^value=(\\d+)$",
+          "run": "qebacklight value {value}",
+          "options": [
+            {
+              "label": "Low",
+              "value": "60"
+            },
+            {
+              "label": "Half",
+              "value": "127"
+            },
+            {
+              "label": "High",
+              "value": "200"
+            },
+            {
+              "label": "Max",
+              "value": "255"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "qe-hooks",
+      "name": "QuestEnhancer hooks",
+      "area": "QuestEnhancer",
+      "summary": "This app's Xposed hooks: hidden settings, dock pins, casting fixes.",
+      "author": "Anonymous941 + Bubbagum88",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer",
+      "licence": "GPL-3.0",
+      "risk": "safe",
+      "check": "sh /data/adb/modules/zygisk_vector/cli scope ls org.codeberg.anonymous950.questenhancer",
+      "onIf": "com\\.oculus\\.systemux"
     }
   ]
 }

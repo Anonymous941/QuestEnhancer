@@ -1,0 +1,33 @@
+#!/system/bin/sh
+# qebacklight: hold the display backlight at a value.
+CONF=/data/adb/qebacklight.conf
+BL=/sys/class/leds/lcd-backlight
+
+need_root() { [ "$(id -u)" = 0 ] || { echo "qebacklight: needs root (su -c ...)"; exit 1; }; }
+[ -d /data/adb/modules/quest1_backlight ] || { echo "qebacklight: module not installed"; exit 3; }
+
+conf_set() {
+  [ -f "$CONF" ] || : > "$CONF"
+  if grep -q "^$1=" "$CONF"; then sed -i "s|^$1=.*|$1=$2|" "$CONF"; else echo "$1=$2" >> "$CONF"; fi
+  pkill -USR1 -f backlightd.sh 2>/dev/null
+  echo "$1=$2"
+}
+
+case "$1" in
+  ""|status)
+    PIN=0; VALUE=255; [ -r "$CONF" ] && . "$CONF"
+    echo "now=$(cat $BL/brightness)"
+    echo "max=$(cat $BL/max_brightness)"
+    echo "pin=$PIN"
+    echo "value=$VALUE"
+    ;;
+  pin)
+    need_root
+    case "$2" in on|1) conf_set PIN 1 ;; off|0) conf_set PIN 0 ;; *) echo "qebacklight pin on|off"; exit 1 ;; esac ;;
+  value)
+    need_root
+    case "$2" in ''|*[!0-9]*) echo "qebacklight value 1-255"; exit 1 ;; esac
+    [ "$2" -ge 1 ] && [ "$2" -le 255 ] || { echo "qebacklight value 1-255"; exit 1; }
+    conf_set VALUE "$2" ;;
+  *) echo "qebacklight [status] | pin on|off | value 1-255"; exit 1 ;;
+esac
