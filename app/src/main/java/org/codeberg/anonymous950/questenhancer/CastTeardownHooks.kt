@@ -35,6 +35,11 @@ import java.util.concurrent.TimeUnit
  *    stuck in CONNECTING is never stopped in vrcast.
  *    Fix: inside those two stop paths, let any known device through.
  *
+ * 5. Horizon dying mid-cast left the TV on a cast with no sender. Fix: watch Horizon's
+ *    callback binder and stop the TV app when it dies.
+ *
+ * 6. One missed heartbeat ended the cast. Fix: allow 3, as Meta's own gatekeeper does.
+ *
  * On by default; su -c setprop debug.qe.cast_teardown 0 turns all of it off (read per call).
  */
 object CastTeardownHooks {
@@ -173,8 +178,59 @@ object CastTeardownHooks {
                 })
         }
 
+        // 5. Horizon dies mid-cast: stop the TV app ourselves instead of leaving the TV on a
+        //    cast with no sender until the next start finds it. Horizon registers an
+        //    IVrCastCallback with VrCastService; registerCallback runs on the binder thread,
+        //    so the caller's uid is known there, and we link to its binder's death.
+        val helperRef = java.util.concurrent.atomic.AtomicReference<Any?>(null)
+        XposedBridge.hookAllMethods(helper, "connect", object : XC_MethodHook() {
+            override fun beforeHookedMethod(param: MethodHookParam) { helperRef.set(param.thisObject) }
+        })
+        val binderCls = XposedHelpers.findClassIfExists("com.oculus.vrcast.VrCastService\$LocalBinder", cl)
+        val register = binderCls?.let { lb ->
+            XposedBridge.hookAllMethods(lb, "registerCallback", object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val uid = android.os.Binder.getCallingUid()
+                    val service = XposedHelpers.getObjectField(param.thisObject, "this\$0") as android.content.Context
+                    val pkgs = service.packageManager.getPackagesForUid(uid) ?: return
+                    if ("com.oculus.horizon" !in pkgs) return
+                    val cb = param.args[0] as? android.os.IInterface ?: return
+                    val handler = XposedHelpers.getObjectField(service, "mHandler") as android.os.Handler
+                    try {
+                        cb.asBinder().linkToDeath({
+                            handler.post {
+                                if (!enabled()) return@post
+                                val h = helperRef.get() ?: return@post
+                                if (XposedHelpers.getObjectField(h, "mGoogleCastMWSBridge") == null) return@post
+                                log("Horizon died during a cast: stopping the TV app")
+                                try { XposedHelpers.callMethod(h, "disconnect") } catch (t: Throwable) { log("disconnect after Horizon death failed: $t") }
+                            }
+                        }, 0)
+                        log("watching Horizon's callback (uid $uid) for death")
+                    } catch (t: Throwable) {
+                        log("could not watch Horizon: $t")
+                    }
+                }
+            })
+        }
+
+        // 6. One missed heartbeat ends the cast (vrcast's default; Meta's own gatekeeper
+        //    oculus_chromecast_increase_ping_failure_tolerance raises it to 3). Use 3.
+        val v2device = XposedHelpers.findClass("$PKG.net.CastV2Device", cl)
+        val ping = XposedBridge.hookAllConstructors(v2device, object : XC_MethodHook() {
+            override fun afterHookedMethod(param: MethodHookParam) {
+                if (!enabled()) return
+                val cur = XposedHelpers.getIntField(param.thisObject, "mMaxPingFailuresToError")
+                if (cur < 3) {
+                    XposedHelpers.setIntField(param.thisObject, "mMaxPingFailuresToError", 3)
+                    log("heartbeat tolerance $cur -> 3 missed pings")
+                }
+            }
+        })
+
         log("vrcast hooks: launchParse=${launchParse.size} ctor=${ctor.size} close=${close.size} " +
-            "connect=${connect.size} launch=${launch.size} onFailure=${onFailure?.size ?: 0}")
+            "connect=${connect.size} launch=${launch.size} onFailure=${onFailure?.size ?: 0} " +
+            "horizonWatch=${register?.size ?: 0} ping=${ping.size}")
     }
 
     /** Send receiver STOP for [sid]; wait for the TV's reply unless on the reply thread. */
