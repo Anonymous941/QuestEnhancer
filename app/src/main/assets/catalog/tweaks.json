@@ -501,6 +501,225 @@
               "value": "0"
             }
           ]
+        },
+        {
+          "type": "header",
+          "label": "Low battery"
+        },
+        {
+          "type": "choice",
+          "label": "Warn at",
+          "state": "^lowlevel=(\\d+)$",
+          "run": "questled lowlevel {value}",
+          "options": [
+            {
+              "label": "10%",
+              "value": "10"
+            },
+            {
+              "label": "15%",
+              "value": "15"
+            },
+            {
+              "label": "25%",
+              "value": "25"
+            },
+            {
+              "label": "Off",
+              "value": "0"
+            }
+          ],
+          "hint": "While asleep on battery; shown until plugged in or worn"
+        },
+        {
+          "type": "choice",
+          "label": "Effect",
+          "state": "^low=(\\w+)$",
+          "run": "questled low {value}",
+          "options": [
+            {
+              "label": "Rainbow",
+              "value": "rainbow"
+            },
+            {
+              "label": "Battery level",
+              "value": "battery"
+            },
+            {
+              "label": "Solid",
+              "value": "solid"
+            },
+            {
+              "label": "Breathe",
+              "value": "breathe"
+            },
+            {
+              "label": "Police",
+              "value": "police"
+            },
+            {
+              "label": "Off",
+              "value": "off"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Colour",
+          "state": "^lowcolor=(#[0-9A-Fa-f]{6})$",
+          "run": "questled lowcolor '{value}'",
+          "wheel": true,
+          "options": [
+            {
+              "label": "Blue",
+              "value": "#00A0FF",
+              "swatch": "#00A0FF"
+            },
+            {
+              "label": "White",
+              "value": "#FFFFFF",
+              "swatch": "#FFFFFF"
+            },
+            {
+              "label": "Red",
+              "value": "#FF0000",
+              "swatch": "#FF0000"
+            },
+            {
+              "label": "Orange",
+              "value": "#FF6000",
+              "swatch": "#FF6000"
+            },
+            {
+              "label": "Yellow",
+              "value": "#FFD000",
+              "swatch": "#FFD000"
+            },
+            {
+              "label": "Green",
+              "value": "#00FF40",
+              "swatch": "#00FF40"
+            },
+            {
+              "label": "Purple",
+              "value": "#A000FF",
+              "swatch": "#A000FF"
+            },
+            {
+              "label": "Pink",
+              "value": "#FF2080",
+              "swatch": "#FF2080"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "label": "Boot finished"
+        },
+        {
+          "type": "choice",
+          "label": "Play for",
+          "state": "^bootsecs=(\\d+)$",
+          "run": "questled bootsecs {value}",
+          "options": [
+            {
+              "label": "2 s",
+              "value": "2"
+            },
+            {
+              "label": "4 s",
+              "value": "4"
+            },
+            {
+              "label": "8 s",
+              "value": "8"
+            },
+            {
+              "label": "Off",
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Effect",
+          "state": "^boot=(\\w+)$",
+          "run": "questled boot {value}",
+          "options": [
+            {
+              "label": "Rainbow",
+              "value": "rainbow"
+            },
+            {
+              "label": "Battery level",
+              "value": "battery"
+            },
+            {
+              "label": "Solid",
+              "value": "solid"
+            },
+            {
+              "label": "Breathe",
+              "value": "breathe"
+            },
+            {
+              "label": "Police",
+              "value": "police"
+            },
+            {
+              "label": "Off",
+              "value": "off"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Colour",
+          "state": "^bootcolor=(#[0-9A-Fa-f]{6})$",
+          "run": "questled bootcolor '{value}'",
+          "wheel": true,
+          "options": [
+            {
+              "label": "Blue",
+              "value": "#00A0FF",
+              "swatch": "#00A0FF"
+            },
+            {
+              "label": "White",
+              "value": "#FFFFFF",
+              "swatch": "#FFFFFF"
+            },
+            {
+              "label": "Red",
+              "value": "#FF0000",
+              "swatch": "#FF0000"
+            },
+            {
+              "label": "Orange",
+              "value": "#FF6000",
+              "swatch": "#FF6000"
+            },
+            {
+              "label": "Yellow",
+              "value": "#FFD000",
+              "swatch": "#FFD000"
+            },
+            {
+              "label": "Green",
+              "value": "#00FF40",
+              "swatch": "#00FF40"
+            },
+            {
+              "label": "Purple",
+              "value": "#A000FF",
+              "swatch": "#A000FF"
+            },
+            {
+              "label": "Pink",
+              "value": "#FF2080",
+              "swatch": "#FF2080"
+            }
+          ]
         }
       ]
     },

@@ -8,6 +8,12 @@
 #   charged, still plugged in FULL_EFFECT   FULL_COLOR
 #   asleep on battery         SLEEP_EFFECT  SLEEP_COLOR   SLEEP_BRIGHT
 #                             (dark after SLEEP_TIMEOUT seconds; 0 = never)
+#   low battery (asleep on battery at or below LOW_BATT %, 0 = off)
+#                             LOW_EFFECT    LOW_COLOR     SLEEP_BRIGHT
+#                             (shown until plugged in or worn; no timeout)
+#
+# Events, played over the state and then back to it:
+#   boot finished             BOOT_EFFECT   BOOT_COLOR    for BOOT_SECONDS (0 = off)
 #
 # Effects: rainbow battery solid breathe police off.
 #
@@ -65,6 +71,8 @@ load_conf() {
     CHARGE_EFFECT=battery; CHARGE_COLOR=#FF6000
     FULL_EFFECT=solid;     FULL_COLOR=#00FF40
     SLEEP_EFFECT=battery;  SLEEP_COLOR=#00A0FF
+    LOW_BATT=15;           LOW_EFFECT=breathe;    LOW_COLOR=#FF0000
+    BOOT_EFFECT=rainbow;   BOOT_COLOR=#00A0FF;    BOOT_SECONDS=4
     CHARGE_WHEN_WORN=0
     SPEED=8; FPS=60; BRIGHT=255; SLEEP_BRIGHT=90; SLEEP_TIMEOUT=90
     GAMMA=1; DEBUG=0
@@ -78,11 +86,15 @@ load_conf() {
     BRIGHT=$(num_or "$BRIGHT" 255);           [ "$BRIGHT" -gt 255 ] && BRIGHT=255
     SLEEP_BRIGHT=$(num_or "$SLEEP_BRIGHT" 90); [ "$SLEEP_BRIGHT" -gt 255 ] && SLEEP_BRIGHT=255
     SLEEP_TIMEOUT=$(num_or "$SLEEP_TIMEOUT" 90)
+    LOW_BATT=$(num_or "$LOW_BATT" 15);        [ "$LOW_BATT" -gt 100 ] && LOW_BATT=100
+    BOOT_SECONDS=$(num_or "$BOOT_SECONDS" 4); [ "$BOOT_SECONDS" -gt 60 ] && BOOT_SECONDS=60
 
     hex_rgb "$COLOR" 00A0FF;        AR=$HR;  AG=$HG;  AB=$HB
     hex_rgb "$CHARGE_COLOR" FF6000; CHR=$HR; CHG=$HG; CHB=$HB
     hex_rgb "$FULL_COLOR" 00FF40;   FR=$HR;  FG=$HG;  FB=$HB
     hex_rgb "$SLEEP_COLOR" 00A0FF;  SR=$HR;  SG=$HG;  SB=$HB
+    hex_rgb "$LOW_COLOR" FF0000;    LR=$HR;  LG=$HG;  LB=$HB
+    hex_rgb "$BOOT_COLOR" 00A0FF;   OR=$HR;  OG=$HG;  OB=$HB
 
     # Frame delay string, built once per load. Per frame would fork printf.
     ms=$(( 1000 / FPS ))
@@ -260,6 +272,15 @@ battwait=0
 ER=0; EG=0; EB=0
 effect=off
 
+# Boot finished: watched once a second until it happens (getprop forks, so not
+# per frame). If the daemon starts long after boot (a module update restarts
+# it), there is nothing to announce.
+booted=0
+boot_until=-1
+next_boot_check=0
+read -r _up _junk < /proc/uptime 2>/dev/null
+[ "${_up%%.*}" -gt 300 ] 2>/dev/null && booted=1
+
 while :; do
     # RELOAD is set by SIGUSR1 (exact); -nt may compare whole seconds only,
     # so it is the fallback for hand edits. -nt is a builtin: no fork.
@@ -282,14 +303,27 @@ while :; do
     # times a second while animating, every pass otherwise.
     if [ "$check" -le 0 ]; then
         check=10
+        if [ "$booted" = 0 ] && [ "$SECONDS" -ge "$next_boot_check" ]; then
+            next_boot_check=$(( SECONDS + 1 ))
+            if [ "$(getprop sys.boot_completed)" = 1 ]; then
+                booted=1
+                [ "$BOOT_SECONDS" -gt 0 ] && boot_until=$(( SECONDS + BOOT_SECONDS ))
+            fi
+        fi
         if is_awake; then awake=1; else awake=0; fi
         if on_power; then power=1; else power=0; fi
-        if [ "$power" = 1 ] && { [ "$awake" = 0 ] || [ "$CHARGE_WHEN_WORN" = 1 ]; }; then
+        if [ "$SECONDS" -lt "$boot_until" ]; then
+            now=boot
+        elif [ "$power" = 1 ] && { [ "$awake" = 0 ] || [ "$CHARGE_WHEN_WORN" = 1 ]; }; then
             if is_full; then now=full; else now=charging; fi
         elif [ "$awake" = 1 ]; then
             now=worn
         else
             now=asleep
+            if [ "$LOW_BATT" -gt 0 ]; then
+                read_batt
+                [ "$BATT" -le "$LOW_BATT" ] && now=low
+            fi
         fi
         if [ "$now" = asleep ]; then
             [ "$asleep_since" -lt 0 ] && asleep_since=$SECONDS
@@ -305,6 +339,8 @@ while :; do
                 charging) effect=$CHARGE_EFFECT; ER=$CHR; EG=$CHG; EB=$CHB ;;
                 full)     effect=$FULL_EFFECT;   ER=$FR;  EG=$FG;  EB=$FB ;;
                 asleep)   effect=$SLEEP_EFFECT;  ER=$SR;  EG=$SG;  EB=$SB ;;
+                low)      effect=$LOW_EFFECT;    ER=$LR;  EG=$LG;  EB=$LB ;;
+                boot)     effect=$BOOT_EFFECT;   ER=$OR;  EG=$OG;  EB=$OB; i=0 ;;
             esac
             log "state $mode: $effect"
         fi
