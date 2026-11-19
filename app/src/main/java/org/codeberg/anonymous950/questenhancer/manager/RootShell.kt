@@ -41,18 +41,23 @@ object RootShell {
                 )
                 flush()
             }
-            val text = StringBuilder()
-            while (true) {
-                val line = output!!.readLine() ?: return closed()
-                if (line.startsWith(marker)) {
-                    val code = line.substring(marker.length).trim().toIntOrNull() ?: -1
-                    if (code == 124) return Result(code, "timed out after ${TIMEOUT_SECONDS}s")
-                    return Result(code, text.toString().trim())
-                }
-                text.append(line).append('\n')
-            }
+            readUntil(marker)
         } catch (e: Exception) {
             closed()
+        }
+    }
+
+    /** Collects output up to the marker line; the marker carries the exit code. */
+    private fun readUntil(marker: String): Result {
+        val text = StringBuilder()
+        while (true) {
+            val line = output!!.readLine() ?: return closed()
+            if (line.startsWith(marker)) {
+                val code = line.substring(marker.length).trim().toIntOrNull() ?: -1
+                if (code == 124) return Result(code, "timed out after ${TIMEOUT_SECONDS}s")
+                return Result(code, text.toString().trim())
+            }
+            text.append(line).append('\n')
         }
     }
 
