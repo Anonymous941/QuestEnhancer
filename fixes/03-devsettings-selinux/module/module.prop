@@ -1,0 +1,6 @@
+id=quest1_devsettings_fix
+name=Quest 1 Developer Settings Fix
+version=1.0
+versionCode=1
+author=Bubbagum88
+description=Lets Android Settings read /proc/zoneinfo and zram stats, which Meta's SELinux policy blocks, so Developer options stop crashing.

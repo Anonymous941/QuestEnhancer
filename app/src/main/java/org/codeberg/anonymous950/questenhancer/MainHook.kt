@@ -14,6 +14,39 @@ import kotlin.reflect.full.companionObjectInstance
 
 class MainHook : IXposedHookLoadPackage {
     override fun handleLoadPackage(lpparam: LoadPackageParam) {
+        // Horizon: casting diagnostics
+        if (lpparam.packageName == "com.oculus.horizon") {
+            HorizonCastHooks.install(lpparam.classLoader)
+            try {
+                CastTeardownHooks.installHorizon(lpparam.classLoader)
+            } catch (t: Throwable) {
+                XposedBridge.log("QuestEnhancer/CastTeardown: Horizon hook not installed: ${'$'}t")
+            }
+            return
+        }
+        // vrcast: Chromecast answer bitrate (off unless its properties are set)
+        if (lpparam.packageName == "com.oculus.vrcast") {
+            try {
+                VrCastHooks.install(lpparam.classLoader)
+            } catch (t: Throwable) {
+                XposedBridge.log("QuestEnhancer/Cast: vrcast hook not installed: ${'$'}t")
+            }
+            try {
+                CastTeardownHooks.installVrCast(lpparam.classLoader)
+            } catch (t: Throwable) {
+                XposedBridge.log("QuestEnhancer/CastTeardown: vrcast hook not installed: ${'$'}t")
+            }
+            return
+        }
+        // OCMS: keep Meta's app auto-updates off
+        if (lpparam.packageName == "com.oculus.ocms") {
+            try {
+                OcmsUpdateHooks.install(lpparam.classLoader)
+            } catch (t: Throwable) {
+                XposedBridge.log("QuestEnhancer/OcmsUpdates: hook not installed: ${'$'}t")
+            }
+            return
+        }
         if (!TARGET_PACKAGES.contains(lpparam.packageName)) {
             return
         }

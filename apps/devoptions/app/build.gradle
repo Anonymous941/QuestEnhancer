@@ -1,0 +1,13 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'io.github.bubbagum88.devoptions'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'io.github.bubbagum88.devoptions'
+        minSdk 26
+        targetSdk 29          // the Quest 1 is Android 10
+        versionCode 1
+        versionName '1.0'
+    }
+}

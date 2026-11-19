@@ -1,0 +1,2 @@
+# The built shim lands here as arm64-v8a.so (and armeabi-v7a.so) during CI.
+# Magisk detects a Zygisk module by the presence of zygisk/<abi>.so.
