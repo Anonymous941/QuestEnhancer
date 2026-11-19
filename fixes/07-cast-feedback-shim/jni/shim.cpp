@@ -39,6 +39,18 @@
 // receiver that caused the bug. It never changes payload, port, or length, and
 // never touches the send path.
 //
+// Guards (v6)
+// -----------
+// liboculus_p2p carries every WebRTC session in Horizon (TV, phone and browser
+// casts, parties, voice), so the rule holds back whenever WebRTC could already
+// be handling the packet itself:
+//   * stale      -- nothing sent to that port for 30 s (old socket, reused fd);
+//   * ambiguous  -- we sent to two IPs on that port in the last 30 s;
+//   * learned    -- that source sent a STUN Binding request on this socket, so
+//                   WebRTC made a peer-reflexive connection for it;
+//   * known-peer -- we sent to that source ourselves in the last 30 s.
+// Each held-back class is counted in the 10 s stats line.
+//
 // Hooking (v3)
 // ------------
 // Only liboculus_p2p.so's GOT is patched, so only Horizon's WebRTC sockets ever
@@ -124,6 +136,7 @@ static void status(const char *fmt, ...) {
 // Traffic counters (relaxed atomics; read by the watcher thread every 10 s).
 static std::atomic<uint32_t> c_recv{0}, c_recv_v4{0}, c_send{0};
 static std::atomic<uint32_t> c_rewrite{0}, c_stun{0}, c_nocast{0}, c_nolan{0}, c_xsub{0};
+static std::atomic<uint32_t> c_stale{0}, c_ambig{0}, c_learned{0}, c_known{0}, c_ipv6{0};
 
 // ---------------------------------------------------------------------------
 // Runtime gate (cached; refreshed every ~2 s so setprop takes effect live).
@@ -148,18 +161,48 @@ static void refresh_gate() {
 }
 
 // ---------------------------------------------------------------------------
-// Per-fd memory of where we have sent: one (ip,port) slot per destination port,
-// a tiny fixed ring. fd is bounded (<FD_CAP); larger fds are ignored (they are
-// never WebRTC's media socket on this device). All IPv4, network byte order.
+// Per-fd memory (v6). For each socket fd (< FD_CAP) we remember, per destination
+// port, the last two distinct IPs we sent to and when; and the source IPs that
+// have sent us STUN on that fd. All IPv4, network byte order; times are
+// CLOCK_MONOTONIC milliseconds.
+//
+// The guards this feeds (see fixup_src):
+//   * stale    -- nothing sent to that port for TTL_MS: the memory may belong to
+//                 an old socket that reused this fd number, so don't trust it.
+//   * ambiguous-- two different IPs were sent to on that port within TTL_MS
+//                 (e.g. ICE checks to both of a peer's candidates): no single
+//                 rewrite target, so leave packets alone.
+//   * learned  -- that source already sent STUN on this fd, so WebRTC knows it
+//                 (peer-reflexive connection) and accepts its media natively.
+//   * known-peer-- we have sent to that source IP ourselves recently on this fd,
+//                 so it is a peer WebRTC talks to, not a stray second interface.
 // ---------------------------------------------------------------------------
 #define FD_CAP   4096          // horizon's fds stay well under this
-#define RING     4             // distinct dest ports remembered per fd
+#define RING     8             // distinct dest ports remembered per fd
+#define STUN_SRC 4             // STUN sources remembered per fd
+#define TTL_MS   30000u        // how long a send keeps a destination "live"
 
-struct DestSlot { uint16_t port; uint32_t ip; };     // port==0 means empty
-struct FdDests  { DestSlot slot[RING]; };
+struct DestSlot {
+    uint16_t port;             // 0 = empty
+    uint32_t ip,  t;           // most recent IP sent to on this port, and when
+    uint32_t ip2, t2;          // the previous, different IP (0 = none)
+};
+struct FdState {
+    DestSlot slot[RING];
+    uint32_t stun_src[STUN_SRC];
+    uint8_t  stun_next;
+};
 
-static FdDests g_dests[FD_CAP];
+static FdState g_fd[FD_CAP];
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
+static std::atomic<uint32_t> c_ring_full{0};
+
+static uint32_t now_ms() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint32_t)(ts.tv_sec * 1000u + ts.tv_nsec / 1000000u);
+}
+static bool live(uint32_t t, uint32_t now) { return t != 0 && (uint32_t)(now - t) < TTL_MS; }
 
 static void record_dest(int fd, const sockaddr *addr, socklen_t len) {
     if (fd < 0 || fd >= FD_CAP || addr == nullptr || len < (socklen_t)sizeof(sockaddr_in)) return;
@@ -168,24 +211,44 @@ static void record_dest(int fd, const sockaddr *addr, socklen_t len) {
     uint16_t port = in->sin_port;
     uint32_t ip   = in->sin_addr.s_addr;
     if (port == 0) return;
+    uint32_t now = now_ms();
+    if (now == 0) now = 1;                                   // 0 means "never"
 
     pthread_mutex_lock(&g_lock);
-    FdDests &d = g_dests[fd];
-    int empty = -1;
+    FdState &f = g_fd[fd];
+    int empty = -1, oldest = 0;
     for (int i = 0; i < RING; i++) {
-        if (d.slot[i].port == port) { d.slot[i].ip = ip; pthread_mutex_unlock(&g_lock); return; }
-        if (empty < 0 && d.slot[i].port == 0) empty = i;
+        DestSlot &s = f.slot[i];
+        if (s.port == port) {
+            if (s.ip != ip) { s.ip2 = s.ip; s.t2 = s.t; s.ip = ip; }
+            s.t = now;
+            pthread_mutex_unlock(&g_lock);
+            return;
+        }
+        if (empty < 0 && s.port == 0) empty = i;
+        if (s.port != 0 && (uint32_t)(now - s.t) > (uint32_t)(now - f.slot[oldest].t)) oldest = i;
     }
-    int idx = (empty >= 0) ? empty : (int)(port % RING);   // reuse a slot if full
-    d.slot[idx].port = port;
-    d.slot[idx].ip   = ip;
+    int idx = empty;
+    if (idx < 0) { idx = oldest; c_ring_full.fetch_add(1, std::memory_order_relaxed); }
+    f.slot[idx] = DestSlot{port, ip, now, 0, 0};
+    pthread_mutex_unlock(&g_lock);
+}
+
+static void note_stun_src(int fd, uint32_t ip) {
+    if (fd < 0 || fd >= FD_CAP) return;
+    pthread_mutex_lock(&g_lock);
+    FdState &f = g_fd[fd];
+    for (int i = 0; i < STUN_SRC; i++)
+        if (f.stun_src[i] == ip) { pthread_mutex_unlock(&g_lock); return; }
+    f.stun_src[f.stun_next] = ip;
+    f.stun_next = (uint8_t)((f.stun_next + 1) % STUN_SRC);
     pthread_mutex_unlock(&g_lock);
 }
 
 static void forget_fd(int fd) {
     if (fd < 0 || fd >= FD_CAP) return;
     pthread_mutex_lock(&g_lock);
-    memset(&g_dests[fd], 0, sizeof(g_dests[fd]));
+    memset(&g_fd[fd], 0, sizeof(g_fd[fd]));
     pthread_mutex_unlock(&g_lock);
 }
 
@@ -203,11 +266,7 @@ static bool is_private_v4(uint32_t ip_net) {
 
 // STUN detection, mirroring WebRTC's own demux (port.cc): a UDP payload is a STUN
 // message when its first two bits are 0 and the magic cookie 0x2112A442 sits at
-// bytes 4-7. ICE binding requests/responses/indications match this; RTP/RTCP media
-// never do (RTP's first byte is 0x80+, version 2). We must leave STUN UNTOUCHED so
-// the ICE handshake completes natively for every peer; only non-STUN media is ever
-// a rewrite candidate -- which is exactly the traffic WebRTC was dropping as
-// "non-STUN packet from unknown address".
+// bytes 4-7. RTP/RTCP media never match (RTP's first byte is 0x80+, version 2).
 static bool is_stun(const void *data, size_t n) {
     if (data == nullptr || n < 8) return false;
     const unsigned char *b = reinterpret_cast<const unsigned char *>(data);
@@ -218,49 +277,71 @@ static bool is_stun(const void *data, size_t n) {
 // Classify an inbound datagram and, if it is the dual-homed TV's media feedback,
 // rewrite its reported source IP to the address we negotiated against so WebRTC's
 // exact-match lookup (Port::GetConnection) succeeds. Returns true if it rewrote;
-// *cls is set to a short classification for logging in every case we examined.
+// *cls is set to a short classification in every case we examined.
 //
 // Rewrite ONLY when ALL hold:
-//   * the feature is enabled,
-//   * this fd has a recorded cast peer we have sent to (so the connection is being
-//     / has been established on this fd) and that peer is a private LAN address,
-//   * the packet is NOT STUN (ICE stays native),
-//   * the source is the same /24 as the recorded peer but a different host octet
-//     and the same port (the dual-homed-receiver signature).
-// Anything else -- party/voice/data replies that already match, cross-subnet or
-// public sources, non-cast fds, STUN -- passes through verbatim.
+//   * the feature is enabled and the source is IPv4, not loopback;
+//   * this fd sent to exactly ONE IP on that port in the last TTL_MS ("stale" /
+//     "ambiguous" otherwise), and that IP is a private LAN address;
+//   * the source differs from it but is in the same /24 ("cross-subnet");
+//   * the packet is not STUN ("stun": ICE stays native, and the source is then
+//     remembered as "learned" for every later packet);
+//   * the source never sent STUN on this fd ("learned") and we never sent to it
+//     ourselves on this fd recently ("known-peer").
+// Anything else passes through verbatim.
 static bool fixup_src(int fd, sockaddr *addr, socklen_t len,
                       const void *data, size_t datalen, const char **cls) {
     *cls = nullptr;
     if (!g_enabled.load(std::memory_order_relaxed)) return false;
     if (fd < 0 || fd >= FD_CAP || addr == nullptr || len < (socklen_t)sizeof(sockaddr_in)) return false;
-    if (addr->sa_family != AF_INET) return false;
+    if (addr->sa_family != AF_INET) { *cls = "ipv6"; return false; }
     sockaddr_in *in = reinterpret_cast<sockaddr_in *>(addr);
     uint16_t port = in->sin_port;
     uint32_t ip   = in->sin_addr.s_addr;
     if (port == 0) return false;
     if (ip == htonl(INADDR_LOOPBACK)) return false;
+    uint32_t now = now_ms();
 
     uint32_t want = 0;
+    bool have = false, stale = false, ambiguous = false, learned = false, known = false;
     pthread_mutex_lock(&g_lock);
-    FdDests &d = g_dests[fd];
+    FdState &f = g_fd[fd];
     for (int i = 0; i < RING; i++) {
-        if (d.slot[i].port == port) { want = d.slot[i].ip; break; }
+        const DestSlot &s = f.slot[i];
+        if (s.port == 0) continue;
+        if (s.port == port) {
+            have = true;
+            want = s.ip;
+            stale = !live(s.t, now);
+            ambiguous = s.ip2 != 0 && s.ip2 != s.ip && live(s.t2, now);
+        }
+        if ((s.ip == ip && live(s.t, now)) || (s.ip2 == ip && live(s.t2, now))) known = true;
     }
+    for (int i = 0; i < STUN_SRC; i++) if (f.stun_src[i] == ip) learned = true;
     pthread_mutex_unlock(&g_lock);
 
-    if (want == 0) { *cls = "local/non-cast"; return false; }     // not a fd we send on this port
+    if (!have) { *cls = "local/non-cast"; return false; }      // not a fd we send on this port
+    if (want == ip) return false;                              // already matches (healthy)
     if (!is_private_v4(want)) { *cls = "non-lan"; return false; } // relayed/public peer: never ours
-    if (want == ip) return false;                                // already matches (healthy: party/voice/single-homed)
-    // Same /24, differing host octet, same port == dual-homed-LAN signature.
     if ((want & htonl(0xFFFFFF00u)) != (ip & htonl(0xFFFFFF00u))) { *cls = "cross-subnet"; return false; }
-    if (is_stun(data, datalen)) { *cls = "stun"; return false; } // leave ICE alone -- the critical guard
+    if (is_stun(data, datalen)) {                              // leave ICE alone -- the critical guard
+        // Only a Binding REQUEST (type 0x0001) makes WebRTC add a peer-reflexive
+        // connection for its source; a stray response from an unknown address is
+        // dropped, so it must not stop the rewrite.
+        const unsigned char *b = reinterpret_cast<const unsigned char *>(data);
+        if (b[0] == 0x00 && b[1] == 0x01) note_stun_src(fd, ip);
+        *cls = "stun";
+        return false;
+    }
+    if (stale)     { *cls = "stale";      return false; }
+    if (ambiguous) { *cls = "ambiguous";  return false; }
+    if (learned)   { *cls = "learned";    return false; }
+    if (known)     { *cls = "known-peer"; return false; }
 
     in->sin_addr.s_addr = want;
     *cls = "tv-feedback";
     return true;
 }
-
 // Rate-limited diagnostic (setprop debug.qe.cast_shim_log 1). Logs the rewrite we
 // made, and -- when the same-/24 dual-homed case arrived as STUN -- logs that we
 // correctly left it alone, so on-device we can see the classifier working.
@@ -279,6 +360,9 @@ static void maybe_log(uint32_t from, uint32_t to, uint16_t port, const char *cls
         LOGI("classified tv-feedback: src %s -> %s (port %u) rewritten so WebRTC accepts it", a, b, ntohs(port));
     else if (strcmp(cls, "stun") == 0)
         LOGI("classified stun: src %s (port %u) left untouched (ICE stays native)", a, ntohs(port));
+    else if (!strcmp(cls, "stale") || !strcmp(cls, "ambiguous") || !strcmp(cls, "learned") ||
+             !strcmp(cls, "known-peer"))
+        LOGI("held back (%s): src %s (port %u) left untouched", cls, a, ntohs(port));
 }
 
 // ---------------------------------------------------------------------------
@@ -305,10 +389,15 @@ static void tally(bool rewrote, const char *cls, bool v4) {
     if (v4) c_recv_v4.fetch_add(1, std::memory_order_relaxed);
     if (rewrote) { c_rewrite.fetch_add(1, std::memory_order_relaxed); return; }
     if (cls == nullptr) return;
-    if      (cls[0] == 's') c_stun.fetch_add(1, std::memory_order_relaxed);     // "stun"
-    else if (cls[0] == 'l') c_nocast.fetch_add(1, std::memory_order_relaxed);   // "local/non-cast"
-    else if (cls[0] == 'n') c_nolan.fetch_add(1, std::memory_order_relaxed);    // "non-lan"
-    else if (cls[0] == 'c') c_xsub.fetch_add(1, std::memory_order_relaxed);     // "cross-subnet"
+    if      (!strcmp(cls, "stun"))           c_stun.fetch_add(1, std::memory_order_relaxed);
+    else if (!strcmp(cls, "local/non-cast")) c_nocast.fetch_add(1, std::memory_order_relaxed);
+    else if (!strcmp(cls, "non-lan"))        c_nolan.fetch_add(1, std::memory_order_relaxed);
+    else if (!strcmp(cls, "cross-subnet"))   c_xsub.fetch_add(1, std::memory_order_relaxed);
+    else if (!strcmp(cls, "stale"))          c_stale.fetch_add(1, std::memory_order_relaxed);
+    else if (!strcmp(cls, "ambiguous"))      c_ambig.fetch_add(1, std::memory_order_relaxed);
+    else if (!strcmp(cls, "learned"))        c_learned.fetch_add(1, std::memory_order_relaxed);
+    else if (!strcmp(cls, "known-peer"))     c_known.fetch_add(1, std::memory_order_relaxed);
+    else if (!strcmp(cls, "ipv6"))           c_ipv6.fetch_add(1, std::memory_order_relaxed);
 }
 
 static ssize_t h_recvfrom(int fd, void *buf, size_t n, int flags,
@@ -465,9 +554,11 @@ static void stats_tick() {
     if (r == last_recv && s == last_send) return;              // only while there's traffic
     last_recv = r; last_send = s;
     status("stats: shim=%d recv %u (ipv4 %u) send %u | rewrites %u, stun-left %u, "
-           "non-cast %u, non-lan %u, cross-subnet %u",
+           "non-cast %u, non-lan %u, cross-subnet %u | held back: stale %u, ambiguous %u, "
+           "learned %u, known-peer %u | ipv6 %u, ring-full %u",
            g_enabled.load() ? 1 : 0, r, c_recv_v4.load(), s, c_rewrite.load(), c_stun.load(),
-           c_nocast.load(), c_nolan.load(), c_xsub.load());
+           c_nocast.load(), c_nolan.load(), c_xsub.load(), c_stale.load(), c_ambig.load(),
+           c_learned.load(), c_known.load(), c_ipv6.load(), c_ring_full.load());
 }
 
 // Waits (cheaply) for the cast library, patches it once, then writes a stats
@@ -514,7 +605,7 @@ static void install_hooks() {
         return;
     }
     refresh_gate();
-    status("installed in com.oculus.horizon (v5), cast_shim=%d log=%d",
+    status("installed in com.oculus.horizon (v6), cast_shim=%d log=%d",
            g_enabled.load() ? 1 : 0, g_log.load() ? 1 : 0);
     pthread_t t;
     int pr = pthread_create(&t, nullptr, watch_for_cast_lib, nullptr);

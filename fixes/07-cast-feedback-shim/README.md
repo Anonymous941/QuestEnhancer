@@ -86,6 +86,24 @@ rule never fires there. The only thing it ever rewrites is the dual-homed
 receiver that caused the bug. It never changes the send path, the payload, the
 port, or the length.
 
+## Guards (v6)
+
+The patched library carries every WebRTC session in Horizon (TV, phone and
+browser casts, parties, voice), so v6 also holds back whenever WebRTC could
+already be handling the packet itself:
+
+- **stale**: nothing was sent to that port for 30 s (an old socket whose fd
+  number was reused).
+- **ambiguous**: we sent to two different IPs on that port in the last 30 s
+  (for example ICE checks to both of a peer's addresses).
+- **learned**: that source sent a STUN Binding request on this socket, so WebRTC
+  created a connection for it and accepts its media without help.
+- **known-peer**: we sent to that source ourselves in the last 30 s.
+
+The status file (`/data/data/com.oculus.horizon/files/qecastshim.log`) logs a
+stats line every 10 s while there is traffic: rewrites, STUN left alone, and
+each held-back class.
+
 ## Use
 
 Off by default. After installing + rebooting:
