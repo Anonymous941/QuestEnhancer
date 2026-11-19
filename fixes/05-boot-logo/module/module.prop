@@ -1,0 +1,6 @@
+id=quest1_boot_logo
+name=Quest 1 boot logo
+version=3
+versionCode=3
+author=Bubbagum88
+description=Our own boot animation logo instead of the Meta one (/system/etc/meta_logo.png, 216x144). A random logo from logos/ is chosen after each boot; pick.sh picks one by hand.

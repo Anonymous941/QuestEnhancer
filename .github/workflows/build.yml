@@ -26,3 +26,58 @@ jobs:
           name: QuestEnhancer-${{ github.sha }}
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
+
+  fixes:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Build Developer Options app
+        working-directory: apps/devoptions
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+          ndk-version: r26b           # = 26.1.10909125
+      - name: Vendor xHook (iqiyi/xHook v1.2.0, MIT)
+        run: |
+          git clone --depth 1 --branch v1.2.0 https://github.com/iqiyi/xHook /tmp/xhook
+          dst=fixes/07-cast-feedback-shim/jni/xhook
+          mkdir -p "$dst"
+          cp /tmp/xhook/libxhook/jni/*.c /tmp/xhook/libxhook/jni/*.h "$dst"/
+          cp /tmp/xhook/LICENSE "$dst"/LICENSE
+      - name: Build cast feedback shim (ndk-build)
+        working-directory: fixes/07-cast-feedback-shim
+        run: |
+          "${{ steps.ndk.outputs.ndk-path }}/ndk-build" \
+            NDK_PROJECT_PATH=. \
+            APP_BUILD_SCRIPT=jni/Android.mk \
+            NDK_APPLICATION_MK=jni/Application.mk
+      - name: Place shim .so into the module
+        run: |
+          base=fixes/07-cast-feedback-shim
+          rm -f "$base/module/zygisk/.gitkeep"
+          mkdir -p "$base/module/zygisk"
+          cp "$base/libs/arm64-v8a/libqecastshim.so"   "$base/module/zygisk/arm64-v8a.so"
+          cp "$base/libs/armeabi-v7a/libqecastshim.so" "$base/module/zygisk/armeabi-v7a.so"
+          ls -l "$base/module/zygisk"
+      - name: Collect APKs and pack Magisk modules
+        run: |
+          mkdir -p out
+          cp apps/devoptions/app/build/outputs/apk/debug/app-debug.apk out/devoptions-${{ github.run_number }}.apk
+          for m in fixes/*/module; do
+            fix=$(basename "$(dirname "$m")")
+            (cd "$m" && zip -r -X "$GITHUB_WORKSPACE/out/$fix.zip" . -x '.gitkeep' -x '*/.gitkeep')
+          done
+          ls -l out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quest1-fixes-${{ github.run_number }}
+          path: out/

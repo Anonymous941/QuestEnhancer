@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Plain "{ }" badge: dark grey circle, white braces. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#263238"
+        android:pathData="M54,4a50,50 0,1 1,0 100a50,50 0,1 1,0 -100z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="7"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M44,30 Q34,30 34,40 L34,48 Q34,54 28,54 Q34,54 34,60 L34,68 Q34,78 44,78
+                          M64,30 Q74,30 74,40 L74,48 Q74,54 80,54 Q74,54 74,60 L74,68 Q74,78 64,78" />
+</vector>
