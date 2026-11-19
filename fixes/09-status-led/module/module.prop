@@ -1,0 +1,6 @@
+id=questled
+name=Quest LED
+version=v1.1.0-qe
+versionCode=110
+author=Juspertinry, QuestEnhancer additions
+description=Status LED effects: rainbow, battery, solid colour, breathe or police while awake; battery level while asleep. Settings in /data/adb/questled.conf apply live (questled command or the QuestEnhancer Manager).

@@ -26,15 +26,144 @@
       "onIf": "^in scope\\nOCMS enabled$"
     },
     {
-      "id": "led-colour",
-      "name": "Status LED colour",
+      "id": "status-led",
+      "name": "Status LED",
       "area": "LED and display",
-      "summary": "The current red, green and blue values of the status LED (0 to 255).",
-      "author": "community (mlsplays, FreeXR, Juspertinry)",
-      "url": "https://github.com/Juspertinry/q1-modules",
-      "licence": "n/a (read only)",
+      "summary": "Fix 09: effects on the status LED while you wear the headset, and the battery level on it while asleep. Changes apply straight away.",
+      "author": "Juspertinry (q1_led), solid/breathe/police and live settings by QuestEnhancer",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/09-status-led",
+      "licence": "MIT",
       "risk": "safe",
-      "check": "for c in red green blue; do echo \"$c $(cat /sys/class/leds/$c/brightness)\"; done"
+      "check": "questled status",
+      "install": "Not installed: flash fixes/09-status-led.zip in Magisk, then restart.",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "LED effects",
+          "state": "^enabled=1$",
+          "on": "questled on",
+          "off": "questled off"
+        },
+        {
+          "type": "choice",
+          "label": "Effect while worn",
+          "state": "^effect=(\\w+)$",
+          "run": "questled effect {value}",
+          "options": [
+            {
+              "label": "Rainbow",
+              "value": "rainbow"
+            },
+            {
+              "label": "Battery",
+              "value": "battery"
+            },
+            {
+              "label": "Solid",
+              "value": "solid"
+            },
+            {
+              "label": "Breathe",
+              "value": "breathe"
+            },
+            {
+              "label": "Police",
+              "value": "police"
+            },
+            {
+              "label": "Off",
+              "value": "off"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Colour (solid and breathe)",
+          "state": "^color=(#[0-9A-Fa-f]{6})$",
+          "run": "questled color '{value}'",
+          "options": [
+            {
+              "label": "Blue",
+              "value": "#00A0FF",
+              "swatch": "#00A0FF"
+            },
+            {
+              "label": "White",
+              "value": "#FFFFFF",
+              "swatch": "#FFFFFF"
+            },
+            {
+              "label": "Red",
+              "value": "#FF0000",
+              "swatch": "#FF0000"
+            },
+            {
+              "label": "Orange",
+              "value": "#FF6000",
+              "swatch": "#FF6000"
+            },
+            {
+              "label": "Green",
+              "value": "#00FF40",
+              "swatch": "#00FF40"
+            },
+            {
+              "label": "Purple",
+              "value": "#A000FF",
+              "swatch": "#A000FF"
+            },
+            {
+              "label": "Pink",
+              "value": "#FF2080",
+              "swatch": "#FF2080"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Speed",
+          "state": "^speed=(\\d+)$",
+          "run": "questled speed {value}",
+          "options": [
+            {
+              "label": "Fast",
+              "value": "2"
+            },
+            {
+              "label": "Medium",
+              "value": "4"
+            },
+            {
+              "label": "Slow",
+              "value": "8"
+            },
+            {
+              "label": "Very slow",
+              "value": "16"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Brightness",
+          "state": "^bright=(\\d+)$",
+          "run": "questled bright {value}",
+          "options": [
+            {
+              "label": "Low",
+              "value": "40"
+            },
+            {
+              "label": "Medium",
+              "value": "120"
+            },
+            {
+              "label": "High",
+              "value": "255"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "backlight",
@@ -46,6 +175,111 @@
       "licence": "n/a (read only)",
       "risk": "safe",
       "check": "echo \"now $(cat /sys/class/leds/lcd-backlight/brightness) of $(cat /sys/class/leds/lcd-backlight/max_brightness)\""
+    },
+    {
+      "id": "passthrough-tint",
+      "name": "Passthrough colour",
+      "area": "Passthrough",
+      "summary": "Fix 10: tints the black and white passthrough view. Only passthrough changes, not menus, apps or video. Made for Quest 1 v50 (build 49845030443200410) and refuses to patch any other build.",
+      "author": "Juspertinry (q1_ptcolor)",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/10-passthrough-tint",
+      "licence": "MIT",
+      "risk": "reboot",
+      "after": "reboot",
+      "check": "ptcolor status",
+      "install": "Not installed: flash fixes/10-passthrough-tint.zip in Magisk, then restart.",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "Tint passthrough",
+          "state": "^enabled\\s+1$",
+          "on": "ptcolor on",
+          "off": "ptcolor off"
+        },
+        {
+          "type": "choice",
+          "label": "Colour",
+          "state": "^colour\\s+(#[0-9A-Fa-f]{6})$",
+          "run": "ptcolor set '{value}'",
+          "options": [
+            {
+              "label": "Ice blue",
+              "value": "#66CCFF",
+              "swatch": "#66CCFF"
+            },
+            {
+              "label": "Amber",
+              "value": "#FFB347",
+              "swatch": "#FFB347"
+            },
+            {
+              "label": "Night vision",
+              "value": "#55FF88",
+              "swatch": "#55FF88"
+            },
+            {
+              "label": "Pink",
+              "value": "#FF6699",
+              "swatch": "#FF6699"
+            },
+            {
+              "label": "Warm",
+              "value": "#FFD9A0",
+              "swatch": "#FFD9A0"
+            },
+            {
+              "label": "Cool",
+              "value": "#A8C8FF",
+              "swatch": "#A8C8FF"
+            },
+            {
+              "label": "None",
+              "value": "#FFFFFF",
+              "swatch": "#FFFFFF"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Strength",
+          "state": "^strength\\s+(\\S+)$",
+          "run": "ptcolor strength {value}",
+          "options": [
+            {
+              "label": "Light",
+              "value": "0.4"
+            },
+            {
+              "label": "Medium",
+              "value": "0.7"
+            },
+            {
+              "label": "Full",
+              "value": "1.0"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Brightness",
+          "state": "^brightness\\s+(\\S+)$",
+          "run": "ptcolor brightness {value}",
+          "options": [
+            {
+              "label": "Normal",
+              "value": "1.0"
+            },
+            {
+              "label": "Brighter",
+              "value": "1.3"
+            },
+            {
+              "label": "Brightest",
+              "value": "1.6"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

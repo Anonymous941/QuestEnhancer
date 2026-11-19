@@ -1,0 +1,76 @@
+#!/system/bin/sh
+# questled: change the status LED settings. The daemon notices the change
+# within a second (it re-reads /data/adb/questled.conf when it is newer).
+
+CONF=/data/adb/questled.conf
+
+usage() {
+  cat <<'USAGE'
+questled, Quest status LED
+
+  questled                    show settings and whether the daemon runs
+  questled on | off           LED effects on, or LED handed back dark
+  questled effect <name>      rainbow battery solid breathe police off
+  questled color <#RRGGBB>    colour for solid and breathe
+  questled speed <seconds>    one rainbow turn or one breath
+  questled bright <0-255>     brightness while awake
+  questled sleepbright <0-255>  brightness of the battery colour while asleep
+  questled log                recent daemon log
+USAGE
+}
+
+need_root() { [ "$(id -u)" = 0 ] || { echo "questled: needs root (su -c ...)"; exit 1; }; }
+
+conf_set() {
+  [ -f "$CONF" ] || : > "$CONF"
+  if grep -q "^$1=" "$CONF"; then
+    sed -i "s|^$1=.*|$1=$2|" "$CONF"
+  else
+    echo "$1=$2" >> "$CONF"
+  fi
+  echo "$1=$2"
+  # Tell the daemon to re-read the config now.
+  pkill -USR1 -f questled.sh 2>/dev/null
+  return 0
+}
+
+num() {
+  case $1 in ''|*[!0-9]*) echo "questled: $2 must be a whole number"; exit 1 ;; esac
+  [ -n "$3" ] && [ "$1" -gt "$3" ] && { echo "questled: $2 is at most $3"; exit 1; }
+  return 0
+}
+
+case "$1" in
+  ""|status)
+    ENABLED=1; AWAKE_EFFECT=rainbow; COLOR=#00A0FF; SPEED=8; BRIGHT=255; SLEEP_BRIGHT=90
+    [ -r "$CONF" ] && . "$CONF"
+    echo "enabled=$ENABLED"
+    echo "effect=$AWAKE_EFFECT"
+    echo "color=$COLOR"
+    echo "speed=$SPEED"
+    echo "bright=$BRIGHT"
+    echo "sleepbright=$SLEEP_BRIGHT"
+    if pgrep -f questled.sh >/dev/null 2>&1; then echo "daemon=running"; else echo "daemon=stopped"; fi
+    ;;
+  on)  need_root; conf_set ENABLED 1 ;;
+  off) need_root; conf_set ENABLED 0 ;;
+  effect)
+    need_root
+    case "$2" in
+      rainbow|battery|solid|breathe|police|off) conf_set AWAKE_EFFECT "$2" ;;
+      *) echo "effects: rainbow battery solid breathe police off"; exit 1 ;;
+    esac ;;
+  color|colour)
+    need_root
+    c=${2#\#}
+    case $c in
+      [0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]) conf_set COLOR "#$c" ;;
+      *) echo "questled: colour is #RRGGBB, like #FF8800"; exit 1 ;;
+    esac ;;
+  speed)       need_root; num "$2" speed 600; [ "$2" -ge 1 ] || { echo "questled: speed is at least 1"; exit 1; }; conf_set SPEED "$2" ;;
+  bright)      need_root; num "$2" bright 255; conf_set BRIGHT "$2" ;;
+  sleepbright) need_root; num "$2" sleepbright 255; conf_set SLEEP_BRIGHT "$2" ;;
+  log)  tail -n 30 /data/adb/questled.log 2>/dev/null || echo "no log yet" ;;
+  -h|--help|help) usage ;;
+  *) echo "questled: unknown command '$1'"; echo; usage; exit 1 ;;
+esac

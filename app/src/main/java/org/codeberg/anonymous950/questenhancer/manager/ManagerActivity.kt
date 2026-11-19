@@ -1,26 +1,30 @@
 package org.codeberg.anonymous950.questenhancer.manager
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
+import android.widget.Toast
 
 /**
  * Quest 1 Manager, laid out like Quest Settings: areas on the left, rows on the right.
- * Read only for now: switches show the state read from the headset and can't be flipped.
+ * Tweaks with controls (catalog "controls") can be changed; the rest only show their state.
  */
 class ManagerActivity : Activity() {
     private val bg = Color.rgb(0x1C, 0x1E, 0x21)
     private val panel = Color.rgb(0x26, 0x29, 0x2D)
     private val selected = Color.rgb(0x3A, 0x3E, 0x44)
     private val dim = Color.rgb(0xA8, 0xAD, 0xB4)
+    private val accent = Color.rgb(0x1A, 0x73, 0xE8)
 
     private var tweaks: List<Tweak> = emptyList()
     private val states = mutableMapOf<String, RootShell.Result>()
@@ -28,6 +32,8 @@ class ManagerActivity : Activity() {
     private lateinit var content: LinearLayout
     private var area = ""
     private var loading = false
+    /** A change was made that only shows after a restart (catalog "after": "reboot"). */
+    private var rebootNeeded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,8 +93,9 @@ class ManagerActivity : Activity() {
         content.removeAllViews()
         content.addView(label(area, 24f, Color.WHITE, bold = true).apply { setPadding(0, 0, 0, dp(4)) })
         content.addView(label(
-            if (loading) "Reading from the headset..." else "Read only: shows what is set on this headset.",
+            if (loading) "Reading from the headset..." else "What is set on this headset now.",
             13f, dim).apply { setPadding(0, 0, 0, dp(16)) })
+        if (rebootNeeded) content.addView(rebootRow())
         for (t in tweaks.filter { it.area == area }) content.addView(row(t))
     }
 
@@ -98,7 +105,9 @@ class ManagerActivity : Activity() {
         val on = r?.takeIf { it.code == 0 }?.let { t.onIf?.containsMatchIn(it.output) }
         val status = when {
             r == null -> "Checking..."
+            r.code != 0 && t.install.isNotEmpty() -> t.install
             r.code != 0 -> r.output.ifEmpty { "Couldn't read (exit ${r.code})" }
+            t.controls.isNotEmpty() && on == null -> ""
             on == null -> r.output.lines().joinToString(" · ")
             on -> "On"
             else -> "Off"
@@ -113,14 +122,12 @@ class ManagerActivity : Activity() {
         val text = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(label(t.name, 17f, Color.WHITE))
-            addView(label(status, 13f, dim))
+            if (status.isNotEmpty()) addView(label(status, 13f, dim))
             addView(details)
         }
-        return LinearLayout(this).apply {
+        val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(20), dp(14), dp(20), dp(14))
-            background = rounded(panel)
             addView(text, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
             if (on != null) addView(Switch(this@ManagerActivity).apply {
                 isChecked = on
@@ -129,9 +136,108 @@ class ManagerActivity : Activity() {
             setOnClickListener {
                 details.visibility = if (details.visibility == View.GONE) View.VISIBLE else View.GONE
             }
+        }
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(14), dp(20), dp(14))
+            background = rounded(panel)
+            addView(header)
+            // Controls only once the state is read, so they never show a guess.
+            if (r != null && r.code == 0) for (c in t.controls) addView(control(t, c, r.output))
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 bottomMargin = dp(8)
             }
+        }
+    }
+
+    /** One setting: a switch on the right, or a row of choices under its label. */
+    private fun control(t: Tweak, c: Control, output: String): View {
+        val box = LinearLayout(this).apply {
+            orientation = if (c.type == "switch") LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+            gravity = if (c.type == "switch") Gravity.CENTER_VERTICAL else Gravity.NO_GRAVITY
+            setPadding(0, dp(14), 0, 0)
+        }
+        box.addView(label(c.label, 15f, Color.WHITE),
+            if (c.type == "switch") LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            else LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        when (c.type) {
+            "switch" -> {
+                val isOn = c.state?.containsMatchIn(output) == true
+                box.addView(Switch(this).apply {
+                    isChecked = isOn
+                    setOnCheckedChangeListener { _, checked -> act(t, if (checked) c.on else c.off) }
+                })
+            }
+            "choice" -> {
+                val current = c.state?.find(output)?.groupValues?.getOrNull(1)
+                val chips = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                for (o in c.options) chips.addView(chip(o, o.value.equals(current, ignoreCase = true)) {
+                    act(t, c.run.replace("{value}", o.value))
+                }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    rightMargin = dp(8)
+                })
+                box.addView(HorizontalScrollView(this).apply {
+                    isHorizontalScrollBarEnabled = false
+                    setPadding(0, dp(8), 0, 0)
+                    addView(chips)
+                })
+            }
+        }
+        return box
+    }
+
+    private fun chip(o: Option, chosen: Boolean, onTap: () -> Unit) = label(o.label, 14f, Color.WHITE).apply {
+        setPadding(dp(14), dp(8), dp(14), dp(8))
+        background = rounded(if (chosen) accent else selected)
+        if (o.swatch != null) {
+            setCompoundDrawablesRelativeWithIntrinsicBounds(GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(o.swatch)
+                setSize(dp(14), dp(14))
+            }, null, null, null)
+            compoundDrawablePadding = dp(8)
+        }
+        setOnClickListener { onTap() }
+    }
+
+    /** Runs a control's command, then reads that tweak's state again. */
+    private fun act(t: Tweak, command: String) {
+        if (command.isEmpty()) return
+        Thread {
+            // Changes get longer than checks: ptcolor rewrites part of an APK copy.
+            val r = RootShell.run(command, timeoutSeconds = 180)
+            val s = RootShell.run(t.check)
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                states[t.id] = s
+                if (r.code != 0) Toast.makeText(this, r.output.ifEmpty { "failed (exit ${r.code})" }, Toast.LENGTH_LONG).show()
+                else if (t.after == "reboot") rebootNeeded = true
+                drawContent()
+            }
+        }.start()
+    }
+
+    private fun rebootRow() = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        setPadding(dp(20), dp(14), dp(20), dp(14))
+        background = rounded(selected)
+        addView(label("Restart the headset to see the change.", 15f, Color.WHITE),
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        addView(label("Restart now", 15f, Color.WHITE, bold = true).apply {
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+            background = rounded(accent)
+            setOnClickListener {
+                AlertDialog.Builder(this@ManagerActivity)
+                    .setTitle("Restart the headset?")
+                    .setMessage("The headset restarts now. Anything open closes.")
+                    .setPositiveButton("Restart") { _, _ -> Thread { RootShell.run("svc power reboot || reboot") }.start() }
+                    .setNegativeButton("Not now", null)
+                    .show()
+            }
+        })
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = dp(12)
         }
     }
 
