@@ -17,7 +17,7 @@ control/cycle modules and the Police LED idea from the Monterey Club Discord.
 
 ## Install
 
-Flash `09-status-led.zip` (from the CI artifact `quest1-fixes-N`) in Magisk, restart.
+Flash `09-status-led-rN.zip` (from the CI artifact `quest1-fixes-rN-<commit>`) in Magisk, restart.
 
 ## Use
 

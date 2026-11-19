@@ -10,8 +10,10 @@ android {
         applicationId = "org.codeberg.anonymous950.questenhancer"
         minSdk = 27
         targetSdk = 37
-        versionCode = 3
-        versionName = "1.0.2"
+        // CI passes its run number, so every build installs over the last one
+        // and the file name, version code and run line up.
+        versionCode = (project.findProperty("ciRun") as String?)?.toIntOrNull() ?: 3
+        versionName = "1.1.0"
     }
 
     // A fixed key, so each CI build installs over the last one (the runner's

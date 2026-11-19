@@ -35,7 +35,7 @@
       "licence": "MIT",
       "risk": "safe",
       "check": "questled status",
-      "install": "Not installed: flash fixes/09-status-led.zip in Magisk, then restart.",
+      "install": "Not installed: flash 09-status-led-rN.zip in Magisk, then restart.",
       "controls": [
         {
           "type": "switch",
@@ -187,7 +187,7 @@
       "risk": "reboot",
       "after": "reboot",
       "check": "ptcolor status",
-      "install": "Not installed: flash fixes/10-passthrough-tint.zip in Magisk, then restart.",
+      "install": "Not installed: flash 10-passthrough-tint-rN.zip in Magisk, then restart.",
       "controls": [
         {
           "type": "switch",

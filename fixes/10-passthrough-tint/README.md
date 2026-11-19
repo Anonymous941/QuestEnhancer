@@ -19,7 +19,7 @@ at `MrServiceHollywood.apk` and has the build check commented out.
 
 ## Install
 
-Flash `10-passthrough-tint.zip` in Magisk, restart. Default tint is ice blue.
+Flash `10-passthrough-tint-rN.zip` (CI artifact `quest1-fixes-rN-<commit>`) in Magisk, restart. Default tint is ice blue.
 
 ## Use
 
