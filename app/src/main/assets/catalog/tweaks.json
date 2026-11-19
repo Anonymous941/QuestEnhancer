@@ -739,15 +739,76 @@
       ]
     },
     {
+      "id": "ui-sounds",
+      "name": "Charging sound",
+      "area": "System fixes",
+      "summary": "Fix 11: plays your own sound when you plug the headset in (or replaces any other UI sound with qesound). Put a real .ogg file at /sdcard/QuestEnhancer/sounds/charging.ogg. Changes play after a restart.",
+      "author": "Bubbagum88, after a Monterey Club Discord tip",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/11-charging-sound",
+      "licence": "GPL-3.0",
+      "risk": "reboot",
+      "after": "reboot",
+      "check": "qesound status",
+      "install": "Not installed: flash 11-charging-sound-rN.zip in Magisk, then restart.",
+      "controls": [
+        {
+          "type": "button",
+          "label": "Use /sdcard/QuestEnhancer/sounds/charging.ogg",
+          "on": "Use",
+          "run": "qesound set ChargingStarted /sdcard/QuestEnhancer/sounds/charging.ogg"
+        },
+        {
+          "type": "button",
+          "label": "Back to Meta's sound",
+          "on": "Reset",
+          "run": "qesound reset ChargingStarted"
+        }
+      ]
+    },
+    {
       "id": "backlight",
-      "name": "Display backlight",
+      "name": "Display brightness",
       "area": "Display",
-      "summary": "The panel backlight value and its maximum.",
-      "author": "community",
-      "url": "",
-      "licence": "n/a (read only)",
+      "summary": "Fix 12: holds the display backlight at a value you choose while the display is on (never while it's off). A brighter panel runs warmer and an OLED ages faster; the system's own value is the safe choice.",
+      "author": "Bubbagum88, after a Monterey Club Discord tip",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/tree/main/fixes/12-backlight",
+      "licence": "GPL-3.0",
       "risk": "safe",
-      "check": "echo \"now $(cat /sys/class/leds/lcd-backlight/brightness) of $(cat /sys/class/leds/lcd-backlight/max_brightness)\""
+      "check": "if [ -d /data/adb/modules/quest1_backlight ]; then qebacklight status; else echo \"now=$(cat /sys/class/leds/lcd-backlight/brightness)\"; echo \"max=$(cat /sys/class/leds/lcd-backlight/max_brightness)\"; echo pin=missing; fi",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "Hold brightness",
+          "hint": "Needs fix 12 (12-backlight-rN.zip). Applies within 2 s.",
+          "state": "^pin=1$",
+          "on": "qebacklight pin on",
+          "off": "qebacklight pin off"
+        },
+        {
+          "type": "choice",
+          "label": "Value",
+          "state": "^value=(\\d+)$",
+          "run": "qebacklight value {value}",
+          "options": [
+            {
+              "label": "Low",
+              "value": "60"
+            },
+            {
+              "label": "Half",
+              "value": "127"
+            },
+            {
+              "label": "High",
+              "value": "200"
+            },
+            {
+              "label": "Max",
+              "value": "255"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "qe-hooks",

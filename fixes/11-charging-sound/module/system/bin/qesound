@@ -1,0 +1,65 @@
+#!/system/bin/sh
+# qesound: replace the headset's UI sounds with your own .ogg files.
+# The module's copy is mounted over /system/product/media/audio/ui at boot, so a
+# change plays after a restart. Nothing in /system is written.
+
+MOD=/data/adb/modules/quest1_ui_sounds
+UI=/system/product/media/audio/ui
+DST=$MOD/system/product/media/audio/ui
+MINE=/sdcard/QuestEnhancer/sounds
+
+usage() {
+  cat <<'USAGE'
+qesound, Quest 1 UI sounds
+
+  qesound                     custom sounds in use, and your sound files
+  qesound stock               the stock UI sound names
+  qesound set NAME FILE.ogg   use FILE for NAME (e.g. ChargingStarted)
+  qesound reset NAME          back to Meta's sound for NAME
+  qesound reset all
+
+The file must be a real Ogg file (starts with "OggS"), not an mp3 renamed.
+Changes play after a restart.
+USAGE
+}
+
+need_root() { [ "$(id -u)" = 0 ] || { echo "qesound: needs root (su -c ...)"; exit 1; }; }
+[ -d "$MOD" ] || { echo "qesound: module not installed"; exit 3; }
+
+case "$1" in
+  ""|status)
+    n=0
+    for f in "$DST"/*.ogg; do
+      [ -f "$f" ] || continue
+      b=${f##*/}; echo "custom=${b%.ogg}"; n=$((n + 1))
+    done
+    [ "$n" = 0 ] && echo "custom=none"
+    for f in "$MINE"/*.ogg; do [ -f "$f" ] && echo "file=$f"; done
+    ;;
+  stock) ls "$UI" | sed -n 's/\.ogg$//p' ;;
+  set)
+    need_root
+    name=${2%.ogg}; file=$3
+    [ -n "$name" ] && [ -n "$file" ] || { usage; exit 1; }
+    case $name in */*|.*) echo "qesound: bad name '$name'"; exit 1 ;; esac
+    [ -f "$UI/$name.ogg" ] || { echo "qesound: no stock sound named $name (qesound stock)"; exit 1; }
+    [ -f "$file" ] || { echo "qesound: no file $file"; exit 1; }
+    magic=$(head -c 4 "$file")
+    [ "$magic" = OggS ] || { echo "qesound: $file is not an Ogg file (convert it, don't just rename it)"; exit 1; }
+    mkdir -p "$DST"
+    cp -f "$file" "$DST/$name.ogg" || exit 1
+    chmod 644 "$DST/$name.ogg"
+    chcon u:object_r:system_file:s0 "$DST/$name.ogg" 2>/dev/null
+    echo "$name: set from $file, plays after a restart"
+    ;;
+  reset)
+    need_root
+    case "$2" in
+      all) rm -f "$DST"/*.ogg; echo "all sounds back to stock after a restart" ;;
+      ""|*/*|.*) usage; exit 1 ;;
+      *) rm -f "$DST/${2%.ogg}.ogg"; echo "${2%.ogg}: back to stock after a restart" ;;
+    esac
+    ;;
+  -h|--help|help) usage ;;
+  *) echo "qesound: unknown command '$1'"; echo; usage; exit 1 ;;
+esac

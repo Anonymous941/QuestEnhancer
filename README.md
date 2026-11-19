@@ -36,6 +36,8 @@ Each fix has its own folder with:
 | [08-ocms-auto-updates](fixes/08-ocms-auto-updates) | Keeps Meta's app auto-updates off | Verified over 3 days on headset (2026-11-09) |
 | [09-status-led](fixes/09-status-led) | Status LED: an effect and colour each for worn, charging, charged and asleep; settings apply live | Based on Juspertinry's q1_led (MIT); PC-tested, not yet on headset |
 | [10-passthrough-tint](fixes/10-passthrough-tint) | Colour tint for the black and white passthrough | Juspertinry's q1_ptcolor (MIT), unchanged; not yet on headset |
+| [11-charging-sound](fixes/11-charging-sound) | Your own plug-in sound (or any UI sound), `qesound` | Our own, after a Discord tip; not yet on headset |
+| [12-backlight](fixes/12-backlight) | Holds the display brightness at a chosen value while the display is on | Our own, after a Discord tip; PC-tested, not yet on headset |
 
 ## Apps
 
