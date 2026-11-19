@@ -27,7 +27,7 @@ posted). Discord names are as they appear on the posts.
 | Quest Disable Microphone Processing | Lexie | module (post) | Planned: audio module |
 | System-wide audio effects patch | Juspertinry | q1-modules q1_audiofx (MIT) | Planned: audio module |
 | Pair controllers using ADB | Uzi | post | Manager: Controllers page, a Pair button per hand |
-| Factory setup skip (bypass NUX) | Juspertinry | post | Planned: Manager button |
+| Factory setup skip (bypass NUX) | Juspertinry | post | Fix 14 (script, for a freshly reset headset) |
 | Activate hand tracking without login | rhkdnjs | post | Planned: Manager switch |
 | 90hz mod [v50 only] | Juspertinry | q1-modules q1_90hz (MIT) | Linked: needs a patched boot image |
 | QuestLHSync Quest 1 Support | Skye | [SkyeCA/QuestLHSync](https://github.com/SkyeCA/QuestLHSync) (MIT, from CreoleVR) | Linked for now: needs its PC SteamVR driver |
