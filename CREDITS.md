@@ -16,7 +16,7 @@ posted). Discord names are as they appear on the posts.
 | LED control stuff | Eclipse | colours.sh (post) | Idea: fix 09's effects |
 | Rainbow led | Uzi (made by mlsplays) | [mlsplays/Quest-root-rainbow-LED-Magisk](https://github.com/mlsplays/Quest-root-rainbow-LED-Magisk) (no licence) | Idea: fix 09's rainbow and worn check |
 | Police led | Uzi (made by bobbyjhonnu-afk) | [bobbyjhonnu-afk/Police-led](https://github.com/bobbyjhonnu-afk/Police-led) (no licence) | Idea: fix 09's police effect |
-| Trans LED | Jolly ProtoGPT | [ProtogenDev/Quest-root-trans-LED-Magisk](https://github.com/ProtogenDev/Quest-root-trans-LED-Magisk) (no licence) | Not yet: idea for a fix 09 colour sequence |
+| Trans LED | Jolly ProtoGPT | [ProtogenDev/Quest-root-trans-LED-Magisk](https://github.com/ProtogenDev/Quest-root-trans-LED-Magisk) (no licence) | Idea: fix 09's trans effect |
 | Status LED module | Juspertinry | [Juspertinry/q1-modules](https://github.com/Juspertinry/q1-modules) q1_led (MIT) | Fix 09 builds on it |
 | Passthrough tint colorizer [v50 only] | Juspertinry | q1-modules q1_ptcolor (MIT) | Fix 10, unchanged |
 | Passthru tint colorizer for Quest 2 | Uzi, for DesertPrinter | repack | Not used: Quest 2 only, unsafe on a Quest 1 |

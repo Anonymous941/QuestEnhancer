@@ -29,14 +29,16 @@ Flash `09-status-led-rN.zip` (from the CI artifact `quest1-fixes-rN-<commit>`) i
     su -c 'questled sleep battery'         # asleep on battery
     su -c 'questled chargeworn on'         # charging colours while worn too
     su -c 'questled sleeptimeout 600'      # dark after 10 min asleep on battery (0 never)
-    su -c 'questled low breathe #FF0000'  # low battery warning
-    su -c 'questled lowlevel 15'           # at or below 15% (0 off)
-    su -c 'questled boot rainbow'          # when boot finishes
-    su -c 'questled bootsecs 4'            # for 4 s (0 off)
+    su -c 'questled lowwarn on'            # low battery warning (off by default)
+    su -c 'questled low breathe #FF0000'   # its effect and colour
+    su -c 'questled lowlevel 15'           # at or below 15%
+    su -c 'questled bootanim on'           # boot finished animation (off by default)
+    su -c 'questled boot rainbow'          # its effect
+    su -c 'questled bootsecs 4'            # for 4 s
     su -c 'questled off'                   # LED dark; 'questled on' brings it back
     su -c 'questled help'
 
-Effects: rainbow, battery (red, orange, green by charge), solid, breathe, police, off.
+Effects: rainbow, battery (red, orange, green by charge), solid, breathe, police, trans (the trans flag's blue, pink and white), off.
 The command writes `/data/adb/questled.conf` and sends the daemon `SIGUSR1`; the
 daemon also re-reads the conf by itself when the file is newer, for hand edits.
 

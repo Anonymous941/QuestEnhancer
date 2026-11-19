@@ -16,7 +16,7 @@ if [ ! -f /data/adb/questled.conf ]; then
     cat > /data/adb/questled.conf <<'CONF'
 # Quest LED settings. Changes apply at once with the questled command or the
 # QuestEnhancer Manager; a hand edit here applies within a second or two.
-# Effects: rainbow battery solid breathe police off
+# Effects: rainbow battery solid breathe police trans off
 
 # 0 hands the LED back dark (the daemon waits; 1 turns it on again).
 ENABLED=1
@@ -38,13 +38,15 @@ SLEEP_EFFECT=battery
 SLEEP_COLOR=#00A0FF
 SLEEP_TIMEOUT=90
 
-# Low battery, asleep on battery at or below LOW_BATT % (0 = off). Shown until
-# plugged in or worn, with no timeout.
+# Low battery warning (1 = on): asleep on battery at or below LOW_BATT %.
+# Shown until plugged in or worn, with no timeout.
+LOW_ENABLED=0
 LOW_BATT=15
 LOW_EFFECT=breathe
 LOW_COLOR=#FF0000
 
-# Played once when boot finishes, for BOOT_SECONDS (0 = off).
+# Boot finished animation (1 = on), played for BOOT_SECONDS.
+BOOT_ENABLED=0
 BOOT_EFFECT=rainbow
 BOOT_COLOR=#00A0FF
 BOOT_SECONDS=4
