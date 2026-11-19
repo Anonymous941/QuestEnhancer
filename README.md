@@ -34,7 +34,7 @@ Each fix has its own folder with:
 | [06-questenhancer](fixes/06-questenhancer) | Setting up this app: Zygisk, Vector, scope | Installed 2026-11-06; Pin and 6+ dock pins confirmed, empty-dock and accountless Library untested |
 | [07-cast-feedback-shim](fixes/07-cast-feedback-shim) | Zygisk shim for casting to dual-homed TVs | Hooks load (v5); fix itself not yet proven |
 | [08-ocms-auto-updates](fixes/08-ocms-auto-updates) | Keeps Meta's app auto-updates off | Verified over 3 days on headset (2026-11-09) |
-| [09-status-led](fixes/09-status-led) | Status LED effects (rainbow, battery, solid, breathe, police), settings apply live | Based on Juspertinry's q1_led (MIT); PC-tested, not yet on headset |
+| [09-status-led](fixes/09-status-led) | Status LED: an effect and colour each for worn, charging, charged and asleep; settings apply live | Based on Juspertinry's q1_led (MIT); PC-tested, not yet on headset |
 | [10-passthrough-tint](fixes/10-passthrough-tint) | Colour tint for the black and white passthrough | Juspertinry's q1_ptcolor (MIT), unchanged; not yet on headset |
 
 ## Apps

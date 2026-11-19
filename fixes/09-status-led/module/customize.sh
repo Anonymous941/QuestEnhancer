@@ -14,41 +14,47 @@ fi
 if [ ! -f /data/adb/questled.conf ]; then
     ui_print "- Writing default config to /data/adb/questled.conf"
     cat > /data/adb/questled.conf <<'CONF'
-# Quest LED settings. Changes apply within a second, no reboot needed.
-# Easiest: su -c 'questled effect breathe', or the QuestEnhancer Manager.
+# Quest LED settings. Changes apply at once with the questled command or the
+# QuestEnhancer Manager; a hand edit here applies within a second or two.
+# Effects: rainbow battery solid breathe police off
 
-# 0 stops the daemon without uninstalling.
+# 0 hands the LED back dark (the daemon waits; 1 turns it on again).
 ENABLED=1
 
-# rainbow | battery | solid | breathe | police | off
+# While you wear the headset.
 AWAKE_EFFECT=rainbow
-
-# Colour for solid and breathe, #RRGGBB.
 COLOR=#00A0FF
 
-# Seconds for one full rainbow rotation, or one breath.
-SPEED=8
+# Charging (asleep, or worn too if CHARGE_WHEN_WORN=1).
+CHARGE_EFFECT=battery
+CHARGE_COLOR=#FF6000
 
-# 60 costs about 4% of one core. 30 halves it.
-FPS=60
+# Charged and still plugged in.
+FULL_EFFECT=solid
+FULL_COLOR=#00FF40
 
-# Brightness ceiling while awake, 0-255.
-BRIGHT=255
-
-# Lower, so it is not glaring in a dark room.
-SLEEP_BRIGHT=90
-
-# Seconds between battery checks while asleep. Whole seconds.
-SLEEP_POLL=1
-
-# Blank after this long asleep and on battery. On a charger it stays lit.
-# 0 never blanks.
+# Asleep on battery; dark after SLEEP_TIMEOUT seconds (0 = never).
+SLEEP_EFFECT=battery
+SLEEP_COLOR=#00A0FF
 SLEEP_TIMEOUT=90
 
-# Gamma correction, so the ramp looks even.
+# Show the charging/full effect while worn too.
+CHARGE_WHEN_WORN=0
+
+# Seconds for one rainbow turn or one breath.
+SPEED=8
+
+# 60 costs about 4% of one core while animating. 30 halves it.
+FPS=60
+
+# Brightness 0-255: worn, and asleep (lower, so it isn't glaring at night).
+BRIGHT=255
+SLEEP_BRIGHT=90
+
+# Gamma correction, so ramps look even.
 GAMMA=1
 
-# 1 logs every sleep poll to /data/adb/questled.log with a hardware read-back.
+# 1 logs more to /data/adb/questled.log.
 DEBUG=0
 CONF
     chmod 644 /data/adb/questled.conf

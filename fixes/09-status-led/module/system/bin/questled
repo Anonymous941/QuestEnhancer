@@ -1,6 +1,6 @@
 #!/system/bin/sh
-# questled: change the status LED settings. The daemon notices the change
-# within a second (it re-reads /data/adb/questled.conf when it is newer).
+# questled: change the status LED settings. The daemon applies a change at once
+# (this sends it SIGUSR1 after writing /data/adb/questled.conf).
 
 CONF=/data/adb/questled.conf
 
@@ -8,14 +8,21 @@ usage() {
   cat <<'USAGE'
 questled, Quest status LED
 
-  questled                    show settings and whether the daemon runs
-  questled on | off           LED effects on, or LED handed back dark
-  questled effect <name>      rainbow battery solid breathe police off
-  questled color <#RRGGBB>    colour for solid and breathe
-  questled speed <seconds>    one rainbow turn or one breath
-  questled bright <0-255>     brightness while awake
-  questled sleepbright <0-255>  brightness of the battery colour while asleep
-  questled log                recent daemon log
+  questled                         every setting, and whether the daemon runs
+  questled on | off                LED effects on, or LED handed back dark
+  questled effect <name>           while worn
+  questled color <#RRGGBB>         colour while worn (solid, breathe)
+  questled charge <name> [#RRGGBB] while charging
+  questled full <name> [#RRGGBB]   charged, still plugged in
+  questled sleep <name> [#RRGGBB]  asleep on battery
+  questled chargeworn on|off       show charging/full while worn too
+  questled speed <seconds>         one rainbow turn or one breath
+  questled bright <0-255>          brightness while worn
+  questled sleepbright <0-255>     brightness while asleep
+  questled sleeptimeout <seconds>  dark after this long asleep on battery (0 never)
+  questled log                     recent daemon log
+
+Effects: rainbow battery solid breathe police off
 USAGE
 }
 
@@ -29,9 +36,24 @@ conf_set() {
     echo "$1=$2" >> "$CONF"
   fi
   echo "$1=$2"
-  # Tell the daemon to re-read the config now.
-  pkill -USR1 -f questled.sh 2>/dev/null
-  return 0
+}
+
+# Tell the daemon to re-read the config now.
+poke() { pkill -USR1 -f questled.sh 2>/dev/null; return 0; }
+
+effect_ok() {
+  case "$1" in
+    rainbow|battery|solid|breathe|police|off) return 0 ;;
+    *) echo "effects: rainbow battery solid breathe police off"; exit 1 ;;
+  esac
+}
+
+color_ok() {
+  c=${1#\#}
+  case $c in
+    [0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]) COLOR_OUT="#$c" ;;
+    *) echo "questled: colour is #RRGGBB, like #FF8800"; exit 1 ;;
+  esac
 }
 
 num() {
@@ -40,36 +62,58 @@ num() {
   return 0
 }
 
+# state <EFFECT_KEY> <COLOR_KEY> <effect> [colour]
+state() {
+  need_root; effect_ok "$3"
+  [ -n "$4" ] && color_ok "$4"
+  conf_set "$1" "$3"
+  [ -n "$4" ] && conf_set "$2" "$COLOR_OUT"
+  poke
+}
+
 case "$1" in
   ""|status)
-    ENABLED=1; AWAKE_EFFECT=rainbow; COLOR=#00A0FF; SPEED=8; BRIGHT=255; SLEEP_BRIGHT=90
+    ENABLED=1; AWAKE_EFFECT=rainbow; COLOR=#00A0FF
+    CHARGE_EFFECT=battery; CHARGE_COLOR=#FF6000
+    FULL_EFFECT=solid; FULL_COLOR=#00FF40
+    SLEEP_EFFECT=battery; SLEEP_COLOR=#00A0FF
+    CHARGE_WHEN_WORN=0; SPEED=8; BRIGHT=255; SLEEP_BRIGHT=90; SLEEP_TIMEOUT=90
     [ -r "$CONF" ] && . "$CONF"
     echo "enabled=$ENABLED"
     echo "effect=$AWAKE_EFFECT"
     echo "color=$COLOR"
+    echo "charge=$CHARGE_EFFECT"
+    echo "chargecolor=$CHARGE_COLOR"
+    echo "full=$FULL_EFFECT"
+    echo "fullcolor=$FULL_COLOR"
+    echo "sleep=$SLEEP_EFFECT"
+    echo "sleepcolor=$SLEEP_COLOR"
+    echo "chargeworn=$CHARGE_WHEN_WORN"
     echo "speed=$SPEED"
     echo "bright=$BRIGHT"
     echo "sleepbright=$SLEEP_BRIGHT"
+    echo "sleeptimeout=$SLEEP_TIMEOUT"
     if pgrep -f questled.sh >/dev/null 2>&1; then echo "daemon=running"; else echo "daemon=stopped"; fi
     ;;
-  on)  need_root; conf_set ENABLED 1 ;;
-  off) need_root; conf_set ENABLED 0 ;;
-  effect)
+  on)  need_root; conf_set ENABLED 1; poke ;;
+  off) need_root; conf_set ENABLED 0; poke ;;
+  effect) need_root; effect_ok "$2"; conf_set AWAKE_EFFECT "$2"; poke ;;
+  color|colour) need_root; color_ok "$2"; conf_set COLOR "$COLOR_OUT"; poke ;;
+  charge) state CHARGE_EFFECT CHARGE_COLOR "$2" "$3" ;;
+  full)   state FULL_EFFECT FULL_COLOR "$2" "$3" ;;
+  sleep)  state SLEEP_EFFECT SLEEP_COLOR "$2" "$3" ;;
+  chargecolor) need_root; color_ok "$2"; conf_set CHARGE_COLOR "$COLOR_OUT"; poke ;;
+  fullcolor)   need_root; color_ok "$2"; conf_set FULL_COLOR "$COLOR_OUT"; poke ;;
+  sleepcolor)  need_root; color_ok "$2"; conf_set SLEEP_COLOR "$COLOR_OUT"; poke ;;
+  chargeworn)
     need_root
-    case "$2" in
-      rainbow|battery|solid|breathe|police|off) conf_set AWAKE_EFFECT "$2" ;;
-      *) echo "effects: rainbow battery solid breathe police off"; exit 1 ;;
-    esac ;;
-  color|colour)
-    need_root
-    c=${2#\#}
-    case $c in
-      [0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]) conf_set COLOR "#$c" ;;
-      *) echo "questled: colour is #RRGGBB, like #FF8800"; exit 1 ;;
-    esac ;;
-  speed)       need_root; num "$2" speed 600; [ "$2" -ge 1 ] || { echo "questled: speed is at least 1"; exit 1; }; conf_set SPEED "$2" ;;
-  bright)      need_root; num "$2" bright 255; conf_set BRIGHT "$2" ;;
-  sleepbright) need_root; num "$2" sleepbright 255; conf_set SLEEP_BRIGHT "$2" ;;
+    case "$2" in on|1) conf_set CHARGE_WHEN_WORN 1 ;; off|0) conf_set CHARGE_WHEN_WORN 0 ;;
+      *) echo "questled chargeworn on|off"; exit 1 ;; esac
+    poke ;;
+  speed)        need_root; num "$2" speed 600; [ "$2" -ge 1 ] || { echo "questled: speed is at least 1"; exit 1; }; conf_set SPEED "$2"; poke ;;
+  bright)       need_root; num "$2" bright 255; conf_set BRIGHT "$2"; poke ;;
+  sleepbright)  need_root; num "$2" sleepbright 255; conf_set SLEEP_BRIGHT "$2"; poke ;;
+  sleeptimeout) need_root; num "$2" sleeptimeout 86400; conf_set SLEEP_TIMEOUT "$2"; poke ;;
   log)  tail -n 30 /data/adb/questled.log 2>/dev/null || echo "no log yet" ;;
   -h|--help|help) usage ;;
   *) echo "questled: unknown command '$1'"; echo; usage; exit 1 ;;

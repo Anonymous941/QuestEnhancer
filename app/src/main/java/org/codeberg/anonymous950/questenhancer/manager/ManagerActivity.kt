@@ -150,32 +150,63 @@ class ManagerActivity : Activity() {
         }
     }
 
-    /** One setting: a switch on the right, or a row of choices under its label. */
+    /** One setting: a sub-heading, a switch on the right, a row of choices, or a button. */
     private fun control(t: Tweak, c: Control, output: String): View {
+        if (c.type == "header") return label(c.label, 13f, dim, bold = true).apply {
+            setPadding(0, dp(22), 0, 0)
+            isAllCaps = true
+        }
+        val inline = c.type == "switch" || c.type == "button"
         val box = LinearLayout(this).apply {
-            orientation = if (c.type == "switch") LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
-            gravity = if (c.type == "switch") Gravity.CENTER_VERTICAL else Gravity.NO_GRAVITY
+            orientation = if (inline) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
+            gravity = if (inline) Gravity.CENTER_VERTICAL else Gravity.NO_GRAVITY
             setPadding(0, dp(14), 0, 0)
         }
-        box.addView(label(c.label, 15f, Color.WHITE),
-            if (c.type == "switch") LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        val text = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(label(c.label, 15f, Color.WHITE))
+            if (c.hint.isNotEmpty()) addView(label(c.hint, 12f, dim))
+        }
+        box.addView(text,
+            if (inline) LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             else LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         when (c.type) {
             "switch" -> {
                 val isOn = c.state?.containsMatchIn(output) == true
                 box.addView(Switch(this).apply {
                     isChecked = isOn
-                    setOnCheckedChangeListener { _, checked -> act(t, if (checked) c.on else c.off) }
+                    setOnCheckedChangeListener { _, checked ->
+                        // Cancelled: redraw, which puts the switch back.
+                        confirmThen(if (checked) c.confirmOn else c.confirmOff, { drawContent() }) {
+                            act(t, if (checked) c.on else c.off)
+                        }
+                    }
                 })
             }
+            "button" -> box.addView(label(c.on.ifEmpty { "Run" }, 14f, Color.WHITE, bold = true).apply {
+                setPadding(dp(16), dp(8), dp(16), dp(8))
+                background = rounded(accent)
+                setOnClickListener { confirmThen(c.confirm) { act(t, c.run, showOutput = true) } }
+            })
             "choice" -> {
                 val current = c.state?.find(output)?.groupValues?.getOrNull(1)
                 val chips = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                for (o in c.options) chips.addView(chip(o, o.value.equals(current, ignoreCase = true)) {
-                    act(t, c.run.replace("{value}", o.value))
-                }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                    rightMargin = dp(8)
-                })
+                val lp = { LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { rightMargin = dp(8) } }
+                var matched = false
+                for (o in c.options) {
+                    val chosen = o.value.equals(current, ignoreCase = true)
+                    matched = matched || chosen
+                    chips.addView(chip(o, chosen) {
+                        confirmThen(c.confirm) { act(t, c.run.replace("{value}", o.value)) }
+                    }, lp())
+                }
+                if (c.wheel) {
+                    // A colour not among the presets shows on the Custom chip.
+                    val now = current?.takeIf { !matched }?.let { runCatching { Color.parseColor(it) }.getOrNull() }
+                    chips.addView(chip(Option("Custom", "", now ?: Color.GRAY), now != null) {
+                        pickColor(now ?: Color.WHITE) { hex -> act(t, c.run.replace("{value}", hex)) }
+                    }, lp())
+                }
                 box.addView(HorizontalScrollView(this).apply {
                     isHorizontalScrollBarEnabled = false
                     setPadding(0, dp(8), 0, 0)
@@ -184,6 +215,41 @@ class ManagerActivity : Activity() {
             }
         }
         return box
+    }
+
+    /** Asks first when [message] is set; [onCancel] runs if the answer is no. */
+    private fun confirmThen(message: String, onCancel: () -> Unit = {}, run: () -> Unit) {
+        if (message.isEmpty()) return run()
+        AlertDialog.Builder(this)
+            .setMessage(message)
+            .setPositiveButton("OK") { _, _ -> run() }
+            .setNegativeButton("Cancel") { _, _ -> onCancel() }
+            .setOnCancelListener { onCancel() }
+            .show()
+    }
+
+    /** The colour wheel, with a swatch of the pick; answers #RRGGBB. */
+    private fun pickColor(start: Int, done: (String) -> Unit) {
+        val swatch = View(this).apply { background = rounded(start) }
+        val wheel = ColorWheel(this).apply {
+            color = start
+            onColor = { swatch.background = rounded(it) }
+        }
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(24), dp(16), dp(24), dp(8))
+            addView(wheel)
+            addView(swatch, LinearLayout.LayoutParams(dp(200), dp(36)).apply { topMargin = dp(16) })
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Pick a colour")
+            .setView(box)
+            .setPositiveButton("Use it") { _, _ ->
+                done(String.format("#%06X", wheel.color and 0xFFFFFF))
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun chip(o: Option, chosen: Boolean, onTap: () -> Unit) = label(o.label, 14f, Color.WHITE).apply {
@@ -201,7 +267,7 @@ class ManagerActivity : Activity() {
     }
 
     /** Runs a control's command, then reads that tweak's state again. */
-    private fun act(t: Tweak, command: String) {
+    private fun act(t: Tweak, command: String, showOutput: Boolean = false) {
         if (command.isEmpty()) return
         Thread {
             // Changes get longer than checks: ptcolor rewrites part of an APK copy.
@@ -211,7 +277,10 @@ class ManagerActivity : Activity() {
                 if (isDestroyed) return@runOnUiThread
                 states[t.id] = s
                 if (r.code != 0) Toast.makeText(this, r.output.ifEmpty { "failed (exit ${r.code})" }, Toast.LENGTH_LONG).show()
-                else if (t.after == "reboot") rebootNeeded = true
+                else {
+                    if (showOutput && r.output.isNotEmpty()) Toast.makeText(this, r.output, Toast.LENGTH_LONG).show()
+                    if (t.after == "reboot") rebootNeeded = true
+                }
                 drawContent()
             }
         }.start()

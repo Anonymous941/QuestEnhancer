@@ -29,15 +29,23 @@ data class Tweak(
 
 /** One setting of a tweak. Commands run as root; `{value}` is the chosen option's value. */
 data class Control(
-    /** "switch" or "choice". */
+    /** "header" (a sub-heading), "switch", "choice" or "button". */
     val type: String,
     val label: String,
+    /** Smaller text under the label. */
+    val hint: String = "",
     /** Regex on the check output. Switch: a match means on. Choice: group 1 is the current value. */
     val state: Regex?,
     val on: String = "",
     val off: String = "",
     val run: String = "",
     val options: List<Option> = emptyList(),
+    /** Choice: add a "Custom" chip that opens a colour wheel; `{value}` gets #RRGGBB. */
+    val wheel: Boolean = false,
+    /** Asked (OK / Cancel) before running: a button's or choice's command, a switch turned on, or off. */
+    val confirm: String = "",
+    val confirmOn: String = "",
+    val confirmOff: String = "",
 )
 
 /** A choice's option. `swatch` draws a colour dot (for colour choices). */
@@ -75,6 +83,11 @@ object Catalog {
         Control(
             type = c.getString("type"),
             label = c.getString("label"),
+            hint = c.optString("hint", ""),
+            wheel = c.optBoolean("wheel", false),
+            confirm = c.optString("confirm", ""),
+            confirmOn = c.optString("confirmOn", ""),
+            confirmOff = c.optString("confirmOff", ""),
             state = regex(c.optString("state", "")),
             on = c.optString("on", ""),
             off = c.optString("off", ""),
