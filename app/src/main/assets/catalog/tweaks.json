@@ -1241,7 +1241,7 @@
       "name": "QuestEnhancer hooks",
       "area": "QuestEnhancer",
       "summary": "This app's Xposed hooks: hidden settings, dock pins, casting fixes.",
-      "author": "Anonymous941 + Bubbagum88",
+      "author": "Anonymous950 (Anonymous941), the original QuestEnhancer; fork additions Bubbagum88",
       "url": "https://github.com/Bubbagum88/QuestEnhancer",
       "licence": "GPL-3.0",
       "risk": "safe",

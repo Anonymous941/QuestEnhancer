@@ -76,6 +76,9 @@ class ManagerActivity : Activity() {
     private fun drawNav() {
         nav.removeAllViews()
         nav.addView(label("Quest Enhancer", 20f, Color.WHITE, bold = true).apply {
+            setPadding(dp(12), 0, dp(12), dp(2))
+        })
+        nav.addView(label("by Anonymous950 · Quest 1 fork by Bubbagum88", 12f, dim).apply {
             setPadding(dp(12), 0, dp(12), dp(16))
         })
         for (a in tweaks.map { it.area }.distinct()) {
