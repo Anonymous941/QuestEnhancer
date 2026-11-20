@@ -1,4 +1,32 @@
-# Credits: Monterey Club community methods
+# Credits
+
+QuestEnhancer stands on two communities: FreeXR, whose tools unlock and root a
+Quest 1 in the first place, and the Monterey Club, whose methods fill the Manager.
+Thank you to everyone below.
+
+## FreeXR: unlocking and root
+
+Nothing in this repo runs without these. QuestEnhancer ships none of their code;
+the guides point to them.
+
+| Who | What |
+| --- | --- |
+| starseed | [QuestStack](https://github.com/starseed12345/QuestStack), the Quest 1 bootloader unlock tool |
+| darknight1050 | [quest-bootloader-unlocker](https://github.com/darknight1050/quest-bootloader-unlocker), the original Quest ABL exploit QuestStack builds on; ARB fuse research; the Quest firmware archive |
+| Lumince | [Singularity-Magisk](https://github.com/Lumince/singularity-Magisk) (root on the Quest) and the [Singularity](https://github.com/Lumince/singularity) app |
+| XirXes | The Oculus token method used for PrivateQuest setup |
+| Lexie | Private Quest setup guide ([FreeXR guides](https://github.com/FreeXR)) |
+| ender9492 | Userdebug dumps and rescue images for Quest models |
+| ARDiva | The documented table of known Oculus preferences |
+| ilovecats | system.db / user0.db and NUX state research |
+| xAstroBoy | Oculus preferences research, dogfood and debug panel tools, `oculus_pref_shell` |
+| geokar | QuestUnlock (Build.TYPE / dogfood hub module) and a prefs editor app |
+| Mandi | Runs the FreeXR community |
+
+And [topjohnwu/Magisk](https://github.com/topjohnwu/Magisk), which
+Singularity-Magisk forks.
+
+## Monterey Club: methods
 
 Most of what QuestEnhancer's Manager offers started as a post in the Monterey
 Club Discord's methods channel. This table lists each one: who posted it, the
@@ -43,6 +71,13 @@ posted). Discord names are as they appear on the posts.
 | Orangefox Recovery + 90hz, parts 1-3 | TheCez | post (no licence) | Linked only, unverified |
 | Ramblings on using Private Quest for setup | Lexie | [FreeXR guides](https://github.com/FreeXR) (no licence) | Linked only |
 | questie | niko | [niko-tar-gz/questie](https://github.com/niko-tar-gz/questie) (GPL-3.0) | Linked only |
+
+People behind the posts and projects above, Monterey Club and upstream:
+Anonymous950 (and Anonymous941's original QuestEnhancer), Lucy (LucentW),
+ethan52, Eclipse, Uzi, mlsplays, bobbyjhonnu-afk, Jolly ProtoGPT (ProtogenDev),
+Juspertinry, Lexie, sctanf, misteranderson91 (Mister Anderson), rhkdnjs,
+snoopythedog (xhilks92-ctrl), Bluedragon, Skye (SkyeCA) and CreoleVR,
+playsamay4, TheCez, niko and symbuzzer.
 
 Licences above come from each repository's LICENSE file where we cloned it;
 "post" means the method was shared as files or commands in Discord with no
