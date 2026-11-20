@@ -38,7 +38,7 @@ Flash `09-status-led-rN.zip` (from the CI artifact `quest1-fixes-rN-<commit>`) i
     su -c 'questled off'                   # LED dark; 'questled on' brings it back
     su -c 'questled help'
 
-Effects: rainbow, battery (red, orange, green by charge), solid, breathe, police, trans (the trans flag's blue, pink and white), off.
+Effects: rainbow, battery (red, orange, green by charge), solid, breathe, police, off.
 The command writes `/data/adb/questled.conf` and sends the daemon `SIGUSR1`; the
 daemon also re-reads the conf by itself when the file is newer, for hand edits.
 

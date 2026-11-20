@@ -141,10 +141,6 @@
               "value": "police"
             },
             {
-              "label": "Trans",
-              "value": "trans"
-            },
-            {
               "label": "Off",
               "value": "off"
             }
@@ -228,10 +224,6 @@
             {
               "label": "Police",
               "value": "police"
-            },
-            {
-              "label": "Trans",
-              "value": "trans"
             },
             {
               "label": "Off",
@@ -327,10 +319,6 @@
               "value": "police"
             },
             {
-              "label": "Trans",
-              "value": "trans"
-            },
-            {
               "label": "Off",
               "value": "off"
             }
@@ -414,10 +402,6 @@
             {
               "label": "Police",
               "value": "police"
-            },
-            {
-              "label": "Trans",
-              "value": "trans"
             },
             {
               "label": "Off",
@@ -577,10 +561,6 @@
               "value": "police"
             },
             {
-              "label": "Trans",
-              "value": "trans"
-            },
-            {
               "label": "Off",
               "value": "off"
             }
@@ -691,10 +671,6 @@
             {
               "label": "Police",
               "value": "police"
-            },
-            {
-              "label": "Trans",
-              "value": "trans"
             },
             {
               "label": "Off",

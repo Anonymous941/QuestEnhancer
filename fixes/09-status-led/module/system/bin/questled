@@ -28,7 +28,7 @@ questled, Quest status LED
   questled sleeptimeout <seconds>  dark after this long asleep on battery (0 never)
   questled log                     recent daemon log
 
-Effects: rainbow battery solid breathe police trans off
+Effects: rainbow battery solid breathe police off
 USAGE
 }
 
@@ -49,8 +49,8 @@ poke() { pkill -USR1 -f questled.sh 2>/dev/null; return 0; }
 
 effect_ok() {
   case "$1" in
-    rainbow|battery|solid|breathe|police|trans|off) return 0 ;;
-    *) echo "effects: rainbow battery solid breathe police trans off"; exit 1 ;;
+    rainbow|battery|solid|breathe|police|off) return 0 ;;
+    *) echo "effects: rainbow battery solid breathe police off"; exit 1 ;;
   esac
 }
 

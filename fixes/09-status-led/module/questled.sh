@@ -15,7 +15,7 @@
 # Events, played over the state and then back to it:
 #   boot finished (BOOT_ENABLED=1) BOOT_EFFECT BOOT_COLOR  for BOOT_SECONDS
 #
-# Effects: rainbow battery solid breathe police trans off.
+# Effects: rainbow battery solid breathe police off.
 #
 # Based on Juspertinry's q1_led v1.0.1 (MIT, github.com/Juspertinry/q1-modules):
 # the rainbow, the battery ramp, fifo frame timing, awake detection and the
@@ -367,21 +367,6 @@ while :; do
             [ "$_p" -gt 255 ] && _p=$(( 511 - _p ))
             _p=$(( 16 + _p * 239 / 255 ))
             emit $(( ER * _p / 255 )) $(( EG * _p / 255 )) $(( EB * _p / 255 ))
-            i=$(( i + 1 )); [ "$i" -ge "$frames" ] && i=0
-            tick "$FRAME_DELAY"
-            ;;
-        trans)
-            # The trans flag's stripes in order, blue pink white pink, each
-            # faded into the next; one pass over SPEED seconds.
-            _q=$(( i * 1024 / frames ))
-            _f=$(( _q & 255 ))
-            case $(( _q >> 8 )) in
-                0) r=$(( 91 + (245-91)*_f/255 )); g=$(( 206 + (169-206)*_f/255 )); b=$(( 250 + (184-250)*_f/255 )) ;;
-                1) r=$(( 245 + (255-245)*_f/255 )); g=$(( 169 + (255-169)*_f/255 )); b=$(( 184 + (255-184)*_f/255 )) ;;
-                2) r=$(( 255 + (245-255)*_f/255 )); g=$(( 255 + (169-255)*_f/255 )); b=$(( 255 + (184-255)*_f/255 )) ;;
-                *) r=$(( 245 + (91-245)*_f/255 )); g=$(( 169 + (206-169)*_f/255 )); b=$(( 184 + (250-184)*_f/255 )) ;;
-            esac
-            emit $r $g $b
             i=$(( i + 1 )); [ "$i" -ge "$frames" ] && i=0
             tick "$FRAME_DELAY"
             ;;

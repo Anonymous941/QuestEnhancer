@@ -16,7 +16,7 @@ if [ ! -f /data/adb/questled.conf ]; then
     cat > /data/adb/questled.conf <<'CONF'
 # Quest LED settings. Changes apply at once with the questled command or the
 # QuestEnhancer Manager; a hand edit here applies within a second or two.
-# Effects: rainbow battery solid breathe police trans off
+# Effects: rainbow battery solid breathe police off
 
 # 0 hands the LED back dark (the daemon waits; 1 turns it on again).
 ENABLED=1
