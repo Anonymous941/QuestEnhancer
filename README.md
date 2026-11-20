@@ -1,4 +1,4 @@
-# QuestEnhancer (Quest 1 fork)
+# QuestEnhancer (fork)
 
 A fork of [Anonymous941/QuestEnhancer](https://github.com/Anonymous941/QuestEnhancer)
 (GPL-3.0) for a rooted Oculus Quest 1 on its last firmware (v50, Android 10,
