@@ -23,6 +23,12 @@ Patch the copy from your own SteamVR install with
 or its `quest1_patcher.py`. QuestEnhancer doesn't ship it. Wireless streaming
 works with the patched app alone; this module is only for the cable.
 
+## Coming
+
+Bluedragon in the Monterey Club Discord is working on a hand tracking patch for
+Quest 1 Steam Link (2.1, a 21 Hz pose model). It isn't released yet; it'll be
+linked here when it is.
+
 ## Install
 
 Flash `13-wired-steamlink-rN.zip` (CI artifact `quest1-fixes-rN-<commit>`) in Magisk,

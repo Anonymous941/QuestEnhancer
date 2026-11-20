@@ -1198,6 +1198,17 @@
       ]
     },
     {
+      "id": "panel-90hz",
+      "name": "Display panel and 90 Hz",
+      "area": "Display",
+      "summary": "Which display panel this headset has. Juspertinry's 90 Hz mod needs a boot image retimed for your panel: its dtpatch.py defaults to Samsung (--panel sdc); AUO panels need --panel auo. 90 Hz itself is a boot flash, so it's linked, not switched here.",
+      "author": "Juspertinry",
+      "url": "https://github.com/Juspertinry/q1-modules/tree/main/q1_90hz",
+      "licence": "MIT",
+      "risk": "boot flash",
+      "check": "pt=$(getprop ro.boot.panel_type); d=$(grep -o \"mdss_dsi_[a-z0-9_]*\" /proc/cmdline | head -1); case \"$d\" in *auo*) p=\"AUO: build the 90 Hz boot image with --panel auo\";; *sdc*) p=\"Samsung: the 90 Hz default boot image fits\";; *) p=\"driver not found in the kernel command line\";; esac; echo \"Panel: $p\"; echo \"panel_type ${pt:-not set}, driver ${d:-unknown}\""
+    },
+    {
       "id": "qe-hooks",
       "name": "QuestEnhancer hooks",
       "area": "QuestEnhancer",
