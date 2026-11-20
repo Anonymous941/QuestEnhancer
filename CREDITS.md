@@ -31,7 +31,7 @@ posted). Discord names are as they appear on the posts.
 | Activate hand tracking without login | rhkdnjs | post | Planned: Manager switch |
 | 90hz mod [v50 only] | Juspertinry | q1-modules q1_90hz (MIT) | Linked: needs a patched boot image; Manager shows your panel (Samsung or AUO) for its `--panel` option |
 | Controller pose injection (experimental) | snoopythedog | [xhilks92-ctrl/quest-tracking-injection](https://github.com/xhilks92-ctrl/quest-tracking-injection) (MIT) | Linked only: a PC developer tool for firmware 49845030443200410; its README reports earlier view freezes |
-| Steam Link hand tracking 2.1 for Quest 1 | Bluedragon | not released yet | Noted under fix 13; nothing to link yet |
+| Quest 2 (Hollywood) v50/v56 Hand Tracking on Quest 1 | Bluedragon | Discord attachments (no licence; engine is Meta's) | Manager: Controllers page status and remove-all button; modules not shipped |
 | QuestLHSync Quest 1 Support | Skye | [SkyeCA/QuestLHSync](https://github.com/SkyeCA/QuestLHSync) (MIT, from CreoleVR) | Linked for now: needs its PC SteamVR driver |
 | Quest 2 controllers on Quest 1 [v50 only] | Juspertinry | q2ctrl-module (no licence) | Linked only: firmware risk |
 | Oled2lcd | Uzi | [symbuzzer/oled2lcd](https://github.com/symbuzzer/oled2lcd) (GPL-3.0) | Not yet |

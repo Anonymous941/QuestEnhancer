@@ -992,6 +992,28 @@
       ]
     },
     {
+      "id": "hand-tracking-v56",
+      "name": "Hand tracking v56 (WIP)",
+      "area": "Controllers",
+      "summary": "Bluedragon's port of the Quest 2 v56 hand tracking engine and models to the Quest 1 DSP: three Magisk modules that must be installed together. Very WIP: about 20 Hz in Steam Link and barely different from stock so far. Not shipped here (Discord attachments, no licence; the engine is Meta's Quest 2 code).",
+      "author": "Bluedragon (Monterey Club)",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/blob/main/CREDITS.md",
+      "licence": "none posted",
+      "risk": "reboot",
+      "after": "reboot",
+      "check": "n=0; for m in q1_ht56_engine q1_hollywood_dpe q1_hollywood_detection; do if [ -d /data/adb/modules/$m ] && [ ! -f /data/adb/modules/$m/remove ]; then n=$((n+1)); echo \"$m installed\"; fi; done; [ $n = 0 ] && exit 3; [ $n -lt 3 ] && echo \"WARNING: only $n of 3 installed; without all three tracking breaks\"; echo \"persist.q1.ht56=$(getprop persist.q1.ht56)\"",
+      "install": "Not installed. From Bluedragon's Monterey Club Discord post: install q1_ht56_engine, q1_hollywood_dpe and q1_hollywood_detection (all three) in Magisk, then restart.",
+      "controls": [
+        {
+          "type": "button",
+          "label": "Remove all three",
+          "on": "Remove",
+          "run": "for m in q1_ht56_engine q1_hollywood_dpe q1_hollywood_detection; do [ -d /data/adb/modules/$m ] && touch /data/adb/modules/$m/remove; done; resetprop -p --delete persist.q1.ht56; echo \"Removed at the next restart\"",
+          "confirm": "Remove Bluedragon's three hand tracking modules and their setting? Stock hand tracking comes back after a restart."
+        }
+      ]
+    },
+    {
       "id": "wired-steamlink",
       "name": "Wired Steam Link",
       "area": "Streaming",

@@ -25,9 +25,9 @@ works with the patched app alone; this module is only for the cable.
 
 ## Coming
 
-Bluedragon in the Monterey Club Discord is working on a hand tracking patch for
-Quest 1 Steam Link (2.1, a 21 Hz pose model). It isn't released yet; it'll be
-linked here when it is.
+Bluedragon's Quest 2 v56 hand tracking port for the Quest 1 (three Magisk modules,
+Monterey Club Discord, very WIP) runs at about 20 Hz in Steam Link; smoothing for
+Steam Link is in progress. The Manager's Controllers page shows whether it's installed.
 
 ## Install
 
