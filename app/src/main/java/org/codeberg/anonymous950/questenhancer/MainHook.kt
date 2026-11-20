@@ -527,6 +527,7 @@ class MainHook : IXposedHookLoadPackage {
 
         // dock: 10 pins, no default pins; Library without a Meta account
         DockLibraryHooks.install(lpparam.classLoader)
+        LibraryTileHooks.install(lpparam.classLoader)
     }
 
     companion object {

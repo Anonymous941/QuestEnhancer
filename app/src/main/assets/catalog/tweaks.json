@@ -501,6 +501,231 @@
               "value": "0"
             }
           ]
+        },
+        {
+          "type": "header",
+          "label": "Low battery"
+        },
+        {
+          "type": "switch",
+          "label": "Low battery warning",
+          "state": "^lowwarn=1$",
+          "on": "questled lowwarn on",
+          "off": "questled lowwarn off"
+        },
+        {
+          "type": "choice",
+          "label": "Warn at",
+          "state": "^lowlevel=(\\d+)$",
+          "run": "questled lowlevel {value}",
+          "options": [
+            {
+              "label": "10%",
+              "value": "10"
+            },
+            {
+              "label": "15%",
+              "value": "15"
+            },
+            {
+              "label": "25%",
+              "value": "25"
+            }
+          ],
+          "hint": "While asleep on battery; shown until plugged in or worn"
+        },
+        {
+          "type": "choice",
+          "label": "Effect",
+          "state": "^low=(\\w+)$",
+          "run": "questled low {value}",
+          "options": [
+            {
+              "label": "Rainbow",
+              "value": "rainbow"
+            },
+            {
+              "label": "Battery level",
+              "value": "battery"
+            },
+            {
+              "label": "Solid",
+              "value": "solid"
+            },
+            {
+              "label": "Breathe",
+              "value": "breathe"
+            },
+            {
+              "label": "Police",
+              "value": "police"
+            },
+            {
+              "label": "Off",
+              "value": "off"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Colour",
+          "state": "^lowcolor=(#[0-9A-Fa-f]{6})$",
+          "run": "questled lowcolor '{value}'",
+          "wheel": true,
+          "options": [
+            {
+              "label": "Blue",
+              "value": "#00A0FF",
+              "swatch": "#00A0FF"
+            },
+            {
+              "label": "White",
+              "value": "#FFFFFF",
+              "swatch": "#FFFFFF"
+            },
+            {
+              "label": "Red",
+              "value": "#FF0000",
+              "swatch": "#FF0000"
+            },
+            {
+              "label": "Orange",
+              "value": "#FF6000",
+              "swatch": "#FF6000"
+            },
+            {
+              "label": "Yellow",
+              "value": "#FFD000",
+              "swatch": "#FFD000"
+            },
+            {
+              "label": "Green",
+              "value": "#00FF40",
+              "swatch": "#00FF40"
+            },
+            {
+              "label": "Purple",
+              "value": "#A000FF",
+              "swatch": "#A000FF"
+            },
+            {
+              "label": "Pink",
+              "value": "#FF2080",
+              "swatch": "#FF2080"
+            }
+          ]
+        },
+        {
+          "type": "header",
+          "label": "Boot finished"
+        },
+        {
+          "type": "switch",
+          "label": "Boot animation",
+          "state": "^bootanim=1$",
+          "on": "questled bootanim on",
+          "off": "questled bootanim off"
+        },
+        {
+          "type": "choice",
+          "label": "Play for",
+          "state": "^bootsecs=(\\d+)$",
+          "run": "questled bootsecs {value}",
+          "options": [
+            {
+              "label": "2 s",
+              "value": "2"
+            },
+            {
+              "label": "4 s",
+              "value": "4"
+            },
+            {
+              "label": "8 s",
+              "value": "8"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Effect",
+          "state": "^boot=(\\w+)$",
+          "run": "questled boot {value}",
+          "options": [
+            {
+              "label": "Rainbow",
+              "value": "rainbow"
+            },
+            {
+              "label": "Battery level",
+              "value": "battery"
+            },
+            {
+              "label": "Solid",
+              "value": "solid"
+            },
+            {
+              "label": "Breathe",
+              "value": "breathe"
+            },
+            {
+              "label": "Police",
+              "value": "police"
+            },
+            {
+              "label": "Off",
+              "value": "off"
+            }
+          ]
+        },
+        {
+          "type": "choice",
+          "label": "Colour",
+          "state": "^bootcolor=(#[0-9A-Fa-f]{6})$",
+          "run": "questled bootcolor '{value}'",
+          "wheel": true,
+          "options": [
+            {
+              "label": "Blue",
+              "value": "#00A0FF",
+              "swatch": "#00A0FF"
+            },
+            {
+              "label": "White",
+              "value": "#FFFFFF",
+              "swatch": "#FFFFFF"
+            },
+            {
+              "label": "Red",
+              "value": "#FF0000",
+              "swatch": "#FF0000"
+            },
+            {
+              "label": "Orange",
+              "value": "#FF6000",
+              "swatch": "#FF6000"
+            },
+            {
+              "label": "Yellow",
+              "value": "#FFD000",
+              "swatch": "#FFD000"
+            },
+            {
+              "label": "Green",
+              "value": "#00FF40",
+              "swatch": "#00FF40"
+            },
+            {
+              "label": "Purple",
+              "value": "#A000FF",
+              "swatch": "#A000FF"
+            },
+            {
+              "label": "Pink",
+              "value": "#FF2080",
+              "swatch": "#FF2080"
+            }
+          ]
         }
       ]
     },
@@ -636,6 +861,133 @@
           "state": "^log=1$",
           "on": "setprop debug.qe.cast_shim_log 1",
           "off": "setprop debug.qe.cast_shim_log 0"
+        }
+      ]
+    },
+    {
+      "id": "library-tiles",
+      "name": "Library tiles",
+      "area": "Library",
+      "summary": "Choose which of Meta's built-in tiles (Settings, Files, Dogfood, Events...) the Library shows, and show your sideloaded apps in the All list too. Hooks in SystemUX, set with system properties.",
+      "author": "Bubbagum88",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/blob/main/app/src/main/java/org/codeberg/anonymous950/questenhancer/LibraryTileHooks.kt",
+      "licence": "GPL-3.0",
+      "risk": "safe",
+      "check": "h=$(getprop persist.qe.library_hide); for t in SETTINGS FILE_MANAGER FILE_VIEWER SHARE PEOPLE MESSENGER EVENTS DOGFOOD_HUB HANDS_TUTORIAL FIT_AND_FOCUS_TUTORIAL; do case \",$h,\" in *,$t,*) echo \"tile_$t=hidden\";; *) echo \"tile_$t=shown\";; esac; done; echo \"sideloads=$(getprop persist.qe.library_sideloads)\"",
+      "controls": [
+        {
+          "type": "header",
+          "label": "Sideloaded apps"
+        },
+        {
+          "type": "switch",
+          "label": "Also in the All list",
+          "state": "^sideloads=1$",
+          "on": "setprop persist.qe.library_sideloads 1",
+          "off": "setprop persist.qe.library_sideloads 0",
+          "hint": "Under an Unknown Sources heading, after Meta's apps"
+        },
+        {
+          "type": "header",
+          "label": "Built-in tiles"
+        },
+        {
+          "type": "switch",
+          "label": "Settings",
+          "state": "^tile_SETTINGS=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e SETTINGS -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e SETTINGS -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}SETTINGS\""
+        },
+        {
+          "type": "switch",
+          "label": "Files",
+          "state": "^tile_FILE_MANAGER=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e FILE_MANAGER -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e FILE_MANAGER -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}FILE_MANAGER\""
+        },
+        {
+          "type": "switch",
+          "label": "File viewer",
+          "state": "^tile_FILE_VIEWER=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e FILE_VIEWER -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e FILE_VIEWER -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}FILE_VIEWER\""
+        },
+        {
+          "type": "switch",
+          "label": "Camera / Share",
+          "state": "^tile_SHARE=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e SHARE -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e SHARE -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}SHARE\""
+        },
+        {
+          "type": "switch",
+          "label": "People",
+          "state": "^tile_PEOPLE=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e PEOPLE -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e PEOPLE -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}PEOPLE\""
+        },
+        {
+          "type": "switch",
+          "label": "Messenger",
+          "state": "^tile_MESSENGER=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e MESSENGER -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e MESSENGER -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}MESSENGER\""
+        },
+        {
+          "type": "switch",
+          "label": "Events",
+          "state": "^tile_EVENTS=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e EVENTS -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e EVENTS -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}EVENTS\""
+        },
+        {
+          "type": "switch",
+          "label": "Dogfood",
+          "state": "^tile_DOGFOOD_HUB=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e DOGFOOD_HUB -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e DOGFOOD_HUB -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}DOGFOOD_HUB\""
+        },
+        {
+          "type": "switch",
+          "label": "Hands tutorial",
+          "state": "^tile_HANDS_TUTORIAL=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e HANDS_TUTORIAL -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e HANDS_TUTORIAL -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}HANDS_TUTORIAL\""
+        },
+        {
+          "type": "switch",
+          "label": "Fit and focus tutorial",
+          "state": "^tile_FIT_AND_FOCUS_TUTORIAL=shown$",
+          "on": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e FIT_AND_FOCUS_TUTORIAL -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:-none}\"",
+          "off": "h=$(getprop persist.qe.library_hide | tr \",\" \"\\n\" | grep -vx -e FIT_AND_FOCUS_TUTORIAL -e none | tr \"\\n\" , | sed \"s/,$//\"); setprop persist.qe.library_hide \"${h:+$h,}FIT_AND_FOCUS_TUTORIAL\""
+        }
+      ]
+    },
+    {
+      "id": "pair-controllers",
+      "name": "Pair controllers",
+      "area": "Controllers",
+      "summary": "Pairs a Touch controller from the headset with Meta's pairing_ctl, no phone app. Each button opens a 15 second pairing window for that hand.",
+      "author": "Uzi (Monterey Club)",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/blob/main/CREDITS.md",
+      "licence": "post",
+      "risk": "safe",
+      "check": "p=$(command -v pairing_ctl) || exit 3; echo \"tool=$p\"",
+      "install": "pairing_ctl isn't on this firmware, so pairing from here isn't available.",
+      "controls": [
+        {
+          "type": "button",
+          "label": "Right controller",
+          "on": "Pair",
+          "run": "pairing_ctl start -r 0 -t 15 2>&1; echo \"done (exit $?)\"",
+          "hint": "Starts a 15 s pairing window: put the controller in pairing mode first"
+        },
+        {
+          "type": "button",
+          "label": "Left controller",
+          "on": "Pair",
+          "run": "pairing_ctl start -l 0 -t 15 2>&1; echo \"done (exit $?)\"",
+          "hint": "Starts a 15 s pairing window: put the controller in pairing mode first"
         }
       ]
     },

@@ -38,6 +38,19 @@ SLEEP_EFFECT=battery
 SLEEP_COLOR=#00A0FF
 SLEEP_TIMEOUT=90
 
+# Low battery warning (1 = on): asleep on battery at or below LOW_BATT %.
+# Shown until plugged in or worn, with no timeout.
+LOW_ENABLED=0
+LOW_BATT=15
+LOW_EFFECT=breathe
+LOW_COLOR=#FF0000
+
+# Boot finished animation (1 = on), played for BOOT_SECONDS.
+BOOT_ENABLED=0
+BOOT_EFFECT=rainbow
+BOOT_COLOR=#00A0FF
+BOOT_SECONDS=4
+
 # Show the charging/full effect while worn too.
 CHARGE_WHEN_WORN=0
 

@@ -39,6 +39,7 @@ Each fix has its own folder with:
 | [11-charging-sound](fixes/11-charging-sound) | Your own plug-in sound (or any UI sound), `qesound` | Our own, after a Discord tip; not yet on headset |
 | [12-backlight](fixes/12-backlight) | Holds the display brightness at a chosen value while the display is on | Our own, after a Discord tip; PC-tested, not yet on headset |
 | [13-wired-steamlink](fixes/13-wired-steamlink) | Steam Link over the USB cable (USB networking), with the patched Steam Link | misteranderson91's q1_steamlink_usb (MIT), unchanged; not yet on headset |
+| [14-skip-setup](fixes/14-skip-setup) | Skips first-time setup on a freshly reset rooted headset (script) | Juspertinry's method; not yet tested by us |
 
 ## Apps
 
@@ -53,6 +54,8 @@ shim, and packs every Magisk module under `fixes/*/module` into a zip on each
 push (Actions tab).
 
 ## Credits
+
+Every community method we use or link, with who posted it: [CREDITS.md](CREDITS.md).
 
 - [Anonymous941](https://github.com/Anonymous941/QuestEnhancer): QuestEnhancer.
 - [LucentW](https://github.com/LucentW/systemux-accountless): systemux-accountless (fix 04 fetches it; not copied here).

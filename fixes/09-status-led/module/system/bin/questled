@@ -15,6 +15,12 @@ questled, Quest status LED
   questled charge <name> [#RRGGBB] while charging
   questled full <name> [#RRGGBB]   charged, still plugged in
   questled sleep <name> [#RRGGBB]  asleep on battery
+  questled lowwarn on|off          low battery warning (off by default)
+  questled low <name> [#RRGGBB]    low battery, asleep on battery
+  questled lowlevel <1-100>        low battery at or below this %
+  questled bootanim on|off         boot finished animation (off by default)
+  questled boot <name> [#RRGGBB]   played once when boot finishes
+  questled bootsecs <1-60>         how long the boot effect plays
   questled chargeworn on|off       show charging/full while worn too
   questled speed <seconds>         one rainbow turn or one breath
   questled bright <0-255>          brightness while worn
@@ -77,6 +83,9 @@ case "$1" in
     CHARGE_EFFECT=battery; CHARGE_COLOR=#FF6000
     FULL_EFFECT=solid; FULL_COLOR=#00FF40
     SLEEP_EFFECT=battery; SLEEP_COLOR=#00A0FF
+    LOW_ENABLED=0; BOOT_ENABLED=0
+    LOW_BATT=15; LOW_EFFECT=breathe; LOW_COLOR=#FF0000
+    BOOT_EFFECT=rainbow; BOOT_COLOR=#00A0FF; BOOT_SECONDS=4
     CHARGE_WHEN_WORN=0; SPEED=8; BRIGHT=255; SLEEP_BRIGHT=90; SLEEP_TIMEOUT=90
     [ -r "$CONF" ] && . "$CONF"
     echo "enabled=$ENABLED"
@@ -88,6 +97,14 @@ case "$1" in
     echo "fullcolor=$FULL_COLOR"
     echo "sleep=$SLEEP_EFFECT"
     echo "sleepcolor=$SLEEP_COLOR"
+    echo "lowwarn=$LOW_ENABLED"
+    echo "low=$LOW_EFFECT"
+    echo "lowcolor=$LOW_COLOR"
+    echo "lowlevel=$LOW_BATT"
+    echo "bootanim=$BOOT_ENABLED"
+    echo "boot=$BOOT_EFFECT"
+    echo "bootcolor=$BOOT_COLOR"
+    echo "bootsecs=$BOOT_SECONDS"
     echo "chargeworn=$CHARGE_WHEN_WORN"
     echo "speed=$SPEED"
     echo "bright=$BRIGHT"
@@ -102,6 +119,18 @@ case "$1" in
   charge) state CHARGE_EFFECT CHARGE_COLOR "$2" "$3" ;;
   full)   state FULL_EFFECT FULL_COLOR "$2" "$3" ;;
   sleep)  state SLEEP_EFFECT SLEEP_COLOR "$2" "$3" ;;
+  low)    state LOW_EFFECT LOW_COLOR "$2" "$3" ;;
+  boot)   state BOOT_EFFECT BOOT_COLOR "$2" "$3" ;;
+  lowwarn|bootanim)
+    need_root
+    [ "$1" = lowwarn ] && k=LOW_ENABLED || k=BOOT_ENABLED
+    case "$2" in on|1) conf_set $k 1 ;; off|0) conf_set $k 0 ;;
+      *) echo "questled $1 on|off"; exit 1 ;; esac
+    poke ;;
+  lowcolor)  need_root; color_ok "$2"; conf_set LOW_COLOR "$COLOR_OUT"; poke ;;
+  bootcolor) need_root; color_ok "$2"; conf_set BOOT_COLOR "$COLOR_OUT"; poke ;;
+  lowlevel)  need_root; num "$2" lowlevel 100; conf_set LOW_BATT "$2"; poke ;;
+  bootsecs)  need_root; num "$2" bootsecs 60; conf_set BOOT_SECONDS "$2"; poke ;;
   chargecolor) need_root; color_ok "$2"; conf_set CHARGE_COLOR "$COLOR_OUT"; poke ;;
   fullcolor)   need_root; color_ok "$2"; conf_set FULL_COLOR "$COLOR_OUT"; poke ;;
   sleepcolor)  need_root; color_ok "$2"; conf_set SLEEP_COLOR "$COLOR_OUT"; poke ;;
