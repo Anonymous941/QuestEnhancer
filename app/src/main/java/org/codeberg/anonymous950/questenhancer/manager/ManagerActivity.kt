@@ -28,6 +28,9 @@ class ManagerActivity : Activity() {
 
     private var tweaks: List<Tweak> = emptyList()
     private val states = mutableMapOf<String, RootShell.Result>()
+    private var bundled: Map<String, Bundled> = emptyMap()
+    /** Bundled tweaks: the module's versionCode on the headset; absent = not installed. */
+    private val installed = mutableMapOf<String, Installed>()
     private lateinit var nav: LinearLayout
     private lateinit var content: LinearLayout
     private var area = ""
@@ -39,6 +42,7 @@ class ManagerActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.decorView.setBackgroundColor(bg)
         tweaks = Catalog.load(this)
+        bundled = Catalog.bundled(this)
         area = savedInstanceState?.getString("area") ?: tweaks.firstOrNull()?.area ?: ""
 
         nav = LinearLayout(this).apply {
@@ -103,8 +107,12 @@ class ManagerActivity : Activity() {
         val r = states[t.id]
         // No switch for a check that failed (root refused, timed out): its state is unknown.
         val on = r?.takeIf { it.code == 0 }?.let { t.onIf?.containsMatchIn(it.output) }
+        val b = bundled[t.bundle]
+        val have = installed[t.id]
         val status = when {
             r == null -> "Checking..."
+            b != null && have?.pending == true -> "Installed ${b.version}: restart the headset to finish."
+            b != null && have == null && r.code != 0 -> "Not installed. Install adds it with Magisk."
             r.code != 0 && t.install.isNotEmpty() -> t.install
             r.code != 0 -> r.output.ifEmpty { "Couldn't read (exit ${r.code})" }
             t.controls.isNotEmpty() && on == null -> ""
@@ -142,6 +150,7 @@ class ManagerActivity : Activity() {
             setPadding(dp(20), dp(14), dp(20), dp(14))
             background = rounded(panel)
             addView(header)
+            if (r != null && b != null) installButton(t, b, have)?.let { addView(it) }
             // Controls only once the state is read, so they never show a guess.
             if (r != null && r.code == 0) for (c in t.controls) addView(control(t, c, r.output))
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
@@ -215,6 +224,72 @@ class ManagerActivity : Activity() {
             }
         }
         return box
+    }
+
+    /**
+     * Install when the module isn't on the headset, Update when the APK carries a newer
+     * versionCode; nothing while an install waits for a restart, or when it's current.
+     */
+    private fun installButton(t: Tweak, b: Bundled, have: Installed?): View? {
+        if (have?.pending == true || (have != null && have.versionCode >= b.versionCode)) return null
+        val update = have != null
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(14), 0, 0)
+        }
+        box.addView(label(
+            if (update) "Update available: ${b.version}" else "Version ${b.version} is in this app.",
+            15f, Color.WHITE), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        box.addView(label(if (update) "Update" else "Install", 14f, Color.WHITE, bold = true).apply {
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+            background = rounded(accent)
+            setOnClickListener {
+                confirmThen("${if (update) "Update" else "Install"} ${t.name} (${b.version}) with Magisk? " +
+                    "Risk: ${t.risk}. It works after a restart.") { install(t, b) }
+            }
+        })
+        return box
+    }
+
+    /** Copies the bundled zip out of the APK and hands it to Magisk, then reads the state again. */
+    private fun install(t: Tweak, b: Bundled) {
+        Thread {
+            val zip = java.io.File(cacheDir, "${b.fix}.zip")
+            val r = try {
+                assets.open("modules/${b.fix}.zip").use { i -> zip.outputStream().use { i.copyTo(it) } }
+                zip.setReadable(true, false)
+                RootShell.run("magisk --install-module '${zip.absolutePath}'", timeoutSeconds = 180)
+            } catch (e: Exception) {
+                RootShell.Result(-1, "couldn't copy the module: ${e.message}")
+            } finally {
+                zip.delete()
+            }
+            val v = installedVersion(b)
+            val s = RootShell.run(t.check)
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                states[t.id] = s
+                if (v != null) installed[t.id] = v else installed.remove(t.id)
+                if (r.code != 0) {
+                    // Magisk's installer prints why (wrong device, missing kernel feature...).
+                    Toast.makeText(this, r.output.lines().takeLast(4).joinToString("\n").ifEmpty { "install failed (exit ${r.code})" }, Toast.LENGTH_LONG).show()
+                } else rebootNeeded = true
+                drawContent()
+            }
+        }.start()
+    }
+
+    /** The module's versionCode: pending in modules_update (installed, not yet restarted) or active. */
+    private fun installedVersion(b: Bundled): Installed? {
+        val r = RootShell.run(
+            "u=/data/adb/modules_update/${b.id}/module.prop; m=/data/adb/modules/${b.id}; " +
+                "if [ -f \$u ]; then echo \"pending \$(sed -n 's/^versionCode=//p' \$u)\"; " +
+                "elif [ -f \$m/module.prop ] && [ ! -f \$m/remove ]; then echo \"active \$(sed -n 's/^versionCode=//p' \$m/module.prop)\"; " +
+                "else echo none; fi")
+        val parts = r.output.trim().split(' ')
+        if (r.code != 0 || parts.size != 2) return null
+        return Installed(parts[1].trim().toIntOrNull() ?: 0, pending = parts[0] == "pending")
     }
 
     /** Asks first when [message] is set; [onCancel] runs if the answer is no. */
@@ -319,8 +394,12 @@ class ManagerActivity : Activity() {
         Thread {
             if (retryRoot) RootShell.retry()
             for (t in tweaks) {
+                val v = bundled[t.bundle]?.let { installedVersion(it) }
                 val r = RootShell.run(t.check)
-                runOnUiThread { states[t.id] = r }
+                runOnUiThread {
+                    if (v != null) installed[t.id] = v else installed.remove(t.id)
+                    states[t.id] = r
+                }
             }
             runOnUiThread {
                 loading = false
@@ -343,3 +422,6 @@ class ManagerActivity : Activity() {
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 }
+
+/** A bundled module on the headset; [pending] = installed, waiting for a restart. */
+data class Installed(val versionCode: Int, val pending: Boolean)

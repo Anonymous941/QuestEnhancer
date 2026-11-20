@@ -48,6 +48,7 @@
     },
     {
       "id": "status-led",
+      "bundle": "09-status-led",
       "name": "Status LED",
       "area": "LED",
       "summary": "Fix 09: an effect and colour for each state of the headset. Changes apply straight away.",
@@ -731,6 +732,7 @@
     },
     {
       "id": "passthrough-tint",
+      "bundle": "10-passthrough-tint",
       "name": "Passthrough colour",
       "area": "Passthrough",
       "summary": "Fix 10: tints the black and white passthrough view. Only passthrough changes, not menus, apps or video. Made for Quest 1 v50 (build 49845030443200410) and refuses to patch any other build.",
@@ -1015,6 +1017,7 @@
     },
     {
       "id": "wired-steamlink",
+      "bundle": "13-wired-steamlink",
       "name": "Wired Steam Link",
       "area": "Streaming",
       "summary": "Fix 13: Steam Link streams over the USB cable, with Wi-Fi as a backup. The headset gets 10.86.13.37 on the cable and gives the PC 10.86.13.38. Needs the patched Steam Link app from misteranderson91's patcher, made from your own SteamVR copy.",
@@ -1093,6 +1096,7 @@
     },
     {
       "id": "devsettings",
+      "bundle": "03-devsettings-selinux",
       "name": "Android Developer options",
       "area": "System fixes",
       "summary": "Fix 03: Android's Developer options page crashed on open (SELinux kept it from reading memory info). The module allows exactly those reads.",
@@ -1149,6 +1153,7 @@
     },
     {
       "id": "ui-sounds",
+      "bundle": "11-charging-sound",
       "name": "Charging sound",
       "area": "System fixes",
       "summary": "Fix 11: plays your own sound when you plug the headset in (or replaces any other UI sound with qesound). Put a real .ogg file at /sdcard/QuestEnhancer/sounds/charging.ogg. Changes play after a restart.",
@@ -1176,6 +1181,7 @@
     },
     {
       "id": "backlight",
+      "bundle": "12-backlight",
       "name": "Display brightness",
       "area": "Display",
       "summary": "Fix 12: holds the display backlight at a value you choose while the display is on (never while it's off). A brighter panel runs warmer and an OLED ages faster; the system's own value is the safe choice.",
