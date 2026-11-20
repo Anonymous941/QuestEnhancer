@@ -1,5 +1,9 @@
 # QuestEnhancer (fork)
 
+> **QuestEnhancer was made by Anonymous950** (GitHub
+> [Anonymous941](https://github.com/Anonymous941)). Every hook this fork builds on
+> is theirs; this fork adds the Manager and the Quest 1 fixes. Thank you.
+
 A fork of [Anonymous941/QuestEnhancer](https://github.com/Anonymous941/QuestEnhancer)
 (GPL-3.0) for a rooted Oculus Quest 1 on its last firmware (v50, Android 10,
 Magisk). It holds two things:

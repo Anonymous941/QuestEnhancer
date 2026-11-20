@@ -48,6 +48,7 @@
     },
     {
       "id": "status-led",
+      "bundle": "09-status-led",
       "name": "Status LED",
       "area": "LED",
       "summary": "Fix 09: an effect and colour for each state of the headset. Changes apply straight away.",
@@ -731,6 +732,7 @@
     },
     {
       "id": "passthrough-tint",
+      "bundle": "10-passthrough-tint",
       "name": "Passthrough colour",
       "area": "Passthrough",
       "summary": "Fix 10: tints the black and white passthrough view. Only passthrough changes, not menus, apps or video. Made for Quest 1 v50 (build 49845030443200410) and refuses to patch any other build.",
@@ -992,7 +994,30 @@
       ]
     },
     {
+      "id": "hand-tracking-v56",
+      "name": "Hand tracking v56 (WIP)",
+      "area": "Controllers",
+      "summary": "Bluedragon's port of the Quest 2 v56 hand tracking engine and models to the Quest 1 DSP: three Magisk modules that must be installed together. Very WIP: about 20 Hz in Steam Link and barely different from stock so far. Not shipped here (Discord attachments, no licence; the engine is Meta's Quest 2 code).",
+      "author": "Bluedragon (Monterey Club)",
+      "url": "https://github.com/Bubbagum88/QuestEnhancer/blob/main/CREDITS.md",
+      "licence": "none posted",
+      "risk": "reboot",
+      "after": "reboot",
+      "check": "n=0; for m in q1_ht56_engine q1_hollywood_dpe q1_hollywood_detection; do if [ -d /data/adb/modules/$m ] && [ ! -f /data/adb/modules/$m/remove ]; then n=$((n+1)); echo \"$m installed\"; fi; done; [ $n = 0 ] && exit 3; [ $n -lt 3 ] && echo \"WARNING: only $n of 3 installed; without all three tracking breaks\"; echo \"persist.q1.ht56=$(getprop persist.q1.ht56)\"",
+      "install": "Not installed. From Bluedragon's Monterey Club Discord post: install q1_ht56_engine, q1_hollywood_dpe and q1_hollywood_detection (all three) in Magisk, then restart.",
+      "controls": [
+        {
+          "type": "button",
+          "label": "Remove all three",
+          "on": "Remove",
+          "run": "for m in q1_ht56_engine q1_hollywood_dpe q1_hollywood_detection; do [ -d /data/adb/modules/$m ] && touch /data/adb/modules/$m/remove; done; resetprop -p --delete persist.q1.ht56; echo \"Removed at the next restart\"",
+          "confirm": "Remove Bluedragon's three hand tracking modules and their setting? Stock hand tracking comes back after a restart."
+        }
+      ]
+    },
+    {
       "id": "wired-steamlink",
+      "bundle": "13-wired-steamlink",
       "name": "Wired Steam Link",
       "area": "Streaming",
       "summary": "Fix 13: Steam Link streams over the USB cable, with Wi-Fi as a backup. The headset gets 10.86.13.37 on the cable and gives the PC 10.86.13.38. Needs the patched Steam Link app from misteranderson91's patcher, made from your own SteamVR copy.",
@@ -1071,6 +1096,7 @@
     },
     {
       "id": "devsettings",
+      "bundle": "03-devsettings-selinux",
       "name": "Android Developer options",
       "area": "System fixes",
       "summary": "Fix 03: Android's Developer options page crashed on open (SELinux kept it from reading memory info). The module allows exactly those reads.",
@@ -1127,6 +1153,7 @@
     },
     {
       "id": "ui-sounds",
+      "bundle": "11-charging-sound",
       "name": "Charging sound",
       "area": "System fixes",
       "summary": "Fix 11: plays your own sound when you plug the headset in (or replaces any other UI sound with qesound). Put a real .ogg file at /sdcard/QuestEnhancer/sounds/charging.ogg. Changes play after a restart.",
@@ -1154,6 +1181,7 @@
     },
     {
       "id": "backlight",
+      "bundle": "12-backlight",
       "name": "Display brightness",
       "area": "Display",
       "summary": "Fix 12: holds the display backlight at a value you choose while the display is on (never while it's off). A brighter panel runs warmer and an OLED ages faster; the system's own value is the safe choice.",
@@ -1198,11 +1226,22 @@
       ]
     },
     {
+      "id": "panel-90hz",
+      "name": "Display panel and 90 Hz",
+      "area": "Display",
+      "summary": "Which display panel this headset has. Juspertinry's 90 Hz mod needs a boot image retimed for your panel: its dtpatch.py defaults to Samsung (--panel sdc); AUO panels need --panel auo. 90 Hz itself is a boot flash, so it's linked, not switched here.",
+      "author": "Juspertinry",
+      "url": "https://github.com/Juspertinry/q1-modules/tree/main/q1_90hz",
+      "licence": "MIT",
+      "risk": "boot flash",
+      "check": "pt=$(getprop ro.boot.panel_type); d=$(grep -o \"mdss_dsi_[a-z0-9_]*\" /proc/cmdline | head -1); case \"$d\" in *auo*) p=\"AUO: build the 90 Hz boot image with --panel auo\";; *sdc*) p=\"Samsung: the 90 Hz default boot image fits\";; *) p=\"driver not found in the kernel command line\";; esac; echo \"Panel: $p\"; echo \"panel_type ${pt:-not set}, driver ${d:-unknown}\""
+    },
+    {
       "id": "qe-hooks",
       "name": "QuestEnhancer hooks",
       "area": "QuestEnhancer",
       "summary": "This app's Xposed hooks: hidden settings, dock pins, casting fixes.",
-      "author": "Anonymous941 + Bubbagum88",
+      "author": "Anonymous950 (Anonymous941), the original QuestEnhancer; fork additions Bubbagum88",
       "url": "https://github.com/Bubbagum88/QuestEnhancer",
       "licence": "GPL-3.0",
       "risk": "safe",

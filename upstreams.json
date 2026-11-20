@@ -1,0 +1,18 @@
+{
+  "_about": "Projects QuestEnhancer ships, builds on or links. The Upstreams workflow checks each one weekly and opens an issue when its default branch moves past \"seen\". After reviewing, set \"seen\" to the new commit. Discord-only methods have no repository and are not checked.",
+  "upstreams": [
+    {"name": "QuestEnhancer (original)", "repo": "Anonymous941/QuestEnhancer", "used": "the app and hooks (fork parent)", "seen": ""},
+    {"name": "q1-modules", "repo": "Juspertinry/q1-modules", "used": "fix 09 (q1_led), fix 10 (q1_ptcolor, bundled); q1_90hz, q1_audiofx linked", "seen": ""},
+    {"name": "quest1-steamlink-patcher", "repo": "misteranderson91/quest1-steamlink-patcher", "used": "fix 13 USB module (bundled)", "seen": ""},
+    {"name": "systemux-accountless", "repo": "LucentW/systemux-accountless", "used": "fix 04 fetches it", "seen": ""},
+    {"name": "QuestLHSync", "repo": "SkyeCA/QuestLHSync", "used": "linked", "seen": ""},
+    {"name": "quest-tracking-injection", "repo": "xhilks92-ctrl/quest-tracking-injection", "used": "linked", "seen": ""},
+    {"name": "Quest-root-rainbow-LED-Magisk", "repo": "mlsplays/Quest-root-rainbow-LED-Magisk", "used": "idea for fix 09", "seen": ""},
+    {"name": "Police-led", "repo": "bobbyjhonnu-afk/Police-led", "used": "idea for fix 09", "seen": ""},
+    {"name": "QuestUserdataBackupTool", "repo": "playsamay4/QuestUserdataBackupTool", "used": "not yet", "seen": ""},
+    {"name": "oled2lcd", "repo": "symbuzzer/oled2lcd", "used": "not yet", "seen": ""},
+    {"name": "questie", "repo": "niko-tar-gz/questie", "used": "linked", "seen": ""},
+    {"name": "QuestStack", "repo": "starseed12345/QuestStack", "used": "unlock (guide)", "seen": ""},
+    {"name": "singularity-Magisk", "repo": "Lumince/singularity-Magisk", "used": "root (guide)", "seen": ""}
+  ]
+}

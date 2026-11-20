@@ -1,0 +1,20 @@
+name: Upstreams
+
+# Weekly: has any project in upstreams.json changed since we last looked?
+on:
+  schedule:
+    - cron: "17 14 * * 1"   # Mondays 14:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/check_upstreams.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

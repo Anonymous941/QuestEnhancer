@@ -25,7 +25,12 @@ data class Tweak(
     val install: String = "",
     /** "reboot": changes show only after a restart, so offer one (with a warning). */
     val after: String = "",
+    /** A fix folder whose module the APK carries (assets/modules/<bundle>.zip): Install/Update buttons. */
+    val bundle: String = "",
 )
+
+/** A module the APK carries, from assets/modules/index.json (written by the bundleModules task). */
+data class Bundled(val fix: String, val id: String, val version: String, val versionCode: Int)
 
 /** One setting of a tweak. Commands run as root; `{value}` is the chosen option's value. */
 data class Control(
@@ -71,8 +76,20 @@ object Catalog {
                 controls = controls(o.optJSONArray("controls")),
                 install = o.optString("install", ""),
                 after = o.optString("after", ""),
+                bundle = o.optString("bundle", ""),
             )
         }
+    }
+
+    /** The bundled modules by fix folder; empty if this build carries none. */
+    fun bundled(context: Context): Map<String, Bundled> = try {
+        val o = JSONObject(context.assets.open("modules/index.json").bufferedReader().use { it.readText() })
+        o.keys().asSequence().associateWith { fix ->
+            val m = o.getJSONObject(fix)
+            Bundled(fix, m.getString("id"), m.optString("version", ""), m.optInt("versionCode", 0))
+        }
+    } catch (e: Exception) {
+        emptyMap()
     }
 
     private fun regex(s: String) = s.takeIf { it.isNotEmpty() }?.let { Regex(it, RegexOption.MULTILINE) }

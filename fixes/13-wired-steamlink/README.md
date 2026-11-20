@@ -23,6 +23,12 @@ Patch the copy from your own SteamVR install with
 or its `quest1_patcher.py`. QuestEnhancer doesn't ship it. Wireless streaming
 works with the patched app alone; this module is only for the cable.
 
+## Coming
+
+Bluedragon's Quest 2 v56 hand tracking port for the Quest 1 (three Magisk modules,
+Monterey Club Discord, very WIP) runs at about 20 Hz in Steam Link; smoothing for
+Steam Link is in progress. The Manager's Controllers page shows whether it's installed.
+
 ## Install
 
 Flash `13-wired-steamlink-rN.zip` (CI artifact `quest1-fixes-rN-<commit>`) in Magisk,
