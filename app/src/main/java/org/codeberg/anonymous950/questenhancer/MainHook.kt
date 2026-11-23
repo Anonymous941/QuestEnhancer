@@ -5,6 +5,7 @@ import android.view.View
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodReplacement
+import de.robv.android.xposed.XSharedPreferences
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
@@ -13,6 +14,8 @@ import kotlin.reflect.KClass
 import kotlin.reflect.full.companionObjectInstance
 
 class MainHook : IXposedHookLoadPackage {
+    private val preferences = XSharedPreferences(BuildConfig.APPLICATION_ID, "xposed_preferences")
+
     override fun handleLoadPackage(lpparam: LoadPackageParam) {
         // Horizon: casting diagnostics
         if (lpparam.packageName == "com.oculus.horizon") {
@@ -50,6 +53,10 @@ class MainHook : IXposedHookLoadPackage {
         if (!TARGET_PACKAGES.contains(lpparam.packageName)) {
             return
         }
+
+        // make sure not to reload again, otherwise functions might change their results in the middle of SystemUX execution
+        // I'm not sure if this causes a problem but better safe than sorry
+        preferences.reload()
 
         val appStateUtil =
             XposedHelpers.findClass("com.oculus.vrshell.util.AppStateUtil", lpparam.classLoader)
@@ -105,11 +112,6 @@ class MainHook : IXposedHookLoadPackage {
             XC_MethodReplacement.returnConstant(true)
         )
 
-        //                    when (key) {
-//                        "oculus_systemux:oculus_sysux_app_lock_settings_section", "oculus_systemux:aui_show_unknown_sources_in_dynamic_app_bar", "oculus_systemux:oculus_gls", "oculus_systemux:oculus_avalanche", "oculus_systemux:oculus_avalanche_gaming_infra_enabled", "oculus_casting:capture_settings_section", "oculus_systemux:oculus_sysux_aui_bar_customization", "oculus_systemux:oculus_sysux_aui_bar_customization_drag", "oculus_systemux:oculus_mobile_settings_app_library_section", "oculus_systemux:oculus_ax_setting_controller_settings_calibration", "oculus_systemux:oculus_ax_setting_controller_settings_up_angle", "oculus_shared_core:is_trusted_user", "oculus_systemux:oculus_mobile_settings_use_test_environments", "oculus_systemux:oculus_mobile_swap_controller_thumbsticks", "oculus_systemux:oc_timeedit", "oculus_systemux:quest_expanded_toast_buttons", "oculus_systemux:oculus_settings_idle_shutdown_enabled", "oculus_systemux:oculus_configurable_mtp_dialog", "oculus_systemux:oculus_mobile_hand2_override", "oculus_systemux:oculus_mobile_enable_hand_emulation_of_controllers", "oculus_systemux:oculus_mobile_boost_your_height", "oculus_systemux:oculus_mobile_double_tap_hand_autotransition", "oculus_systemux:oculus_guardian_room_capture", "oculus_systemux:oculus_intrusion_detection", "oculus_systemux:assistant_exclusive_mic_hack", "oculus_systemux:xros_audio_assist_desk_mode", "oculus_systemux:assistant_oculus_doubletap_setting", "oculus_systemux:assistant_oculus_response_setting" -> {
-//                            param.setResult(true)
-//                        }
-//                    }
         fun deviceConfigMethodHook(
             type: KClass<out DeviceConfigValue>,
             getMethod: String,
@@ -386,13 +388,16 @@ class MainHook : IXposedHookLoadPackage {
             XC_MethodReplacement.returnConstant(HashSet<String?>())
         )
 
-        // XXX: this is a test to allow overriding them by manually editing the XML, remove this or let the user configure it!
         XposedHelpers.findAndHookMethod(
             "com.oculus.deviceconfigclient.DeviceConfigClientUtil",
             lpparam.classLoader,
             "shouldUpdateDeviceConfigCache",
             "com.facebook.mobileconfig.factory.MobileConfigValueSource",
-            XC_MethodReplacement.returnConstant(false)
+            XC_MethodReplacement.returnConstant(
+                !preferences.getBoolean(
+                    "block_device_config_updates", false
+                )
+            )
         )
 
         // remove the confirmation dialog when disabling the guardian because it's unnecessary
@@ -485,24 +490,31 @@ class MainHook : IXposedHookLoadPackage {
             $$"com.oculus.common.systemuxconfig.SystemUXConfiguration$Builder",
             object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
-                    listOf(
-                        "canDefaultApplicationBeRestarted",
-                        "hasAuiNotificationsTab",
-                        "isBrowserAppTileInLibraryVisible",
-                        "isCaptureSectionVisible",
-                        "isCastingButtonVisible",
-                        "isEnterLocalAccountModeSettingVisible",
-                        "isEventsAppTileInLibraryVisible",
-                        "isExitLocalAccountModeSettingVisible",
-                        "isGuardianUIEnabled",
-                        "isOCMSFetchAppsEnabled",
-//                        "isOnlyDisplayInstalledAppsInLibraryEnabled", // TODO: make this configurable, it removes the annoying thing where you can never remove uninstalled apps from your library
-                        "isPermitMultiUserAccountsUIEnabled",
-                        "isWifiEditable",
-                        "supports3DoFAppsLibrary",
-                        "supportsDogfoodHub",
-                        "supportsFitAndFocus"
-                    ).forEach {
+                    buildList {
+                        addAll(
+                            listOf(
+                                "canDefaultApplicationBeRestarted",
+                                "hasAuiNotificationsTab",
+                                "isBrowserAppTileInLibraryVisible",
+                                "isCaptureSectionVisible",
+                                "isCastingButtonVisible",
+                                "isEnterLocalAccountModeSettingVisible",
+                                "isEventsAppTileInLibraryVisible",
+                                "isExitLocalAccountModeSettingVisible",
+                                "isGuardianUIEnabled",
+                                "isOCMSFetchAppsEnabled",
+                                "isPermitMultiUserAccountsUIEnabled",
+                                "isWifiEditable",
+                                "supports3DoFAppsLibrary",
+                                "supportsDogfoodHub",
+                                "supportsFitAndFocus"
+                            )
+                        )
+                        if (preferences.getBoolean(
+                                "hide_uninstalled_apps", false
+                            )
+                        ) add("isOnlyDisplayInstalledAppsInLibraryEnabled")
+                    }.forEach {
                         XposedHelpers.setBooleanField(param.thisObject, it, true)
                     }
                 }
@@ -524,6 +536,13 @@ class MainHook : IXposedHookLoadPackage {
                     }
                 }
             })
+
+        XposedHelpers.findAndHookMethod(
+            "com.oculus.panelapp.anytimeui.AnytimeUIAndroidPanelApp",
+            lpparam.classLoader,
+            "isDebugBarEnabled",
+            XC_MethodReplacement.returnConstant(preferences.getBoolean("enable_dock_debug_bar", true))
+        )
 
         // dock: 10 pins, no default pins; Library without a Meta account
         DockLibraryHooks.install(lpparam.classLoader)

@@ -51,6 +51,8 @@ data class Control(
     val confirm: String = "",
     val confirmOn: String = "",
     val confirmOff: String = "",
+    val preference: String = "",
+    val preferenceDefault: Boolean = false,
 )
 
 /** A choice's option. `swatch` draws a colour dot (for colour choices). */
@@ -71,7 +73,7 @@ object Catalog {
                 url = o.optString("url", ""),
                 licence = o.getString("licence"),
                 risk = o.getString("risk"),
-                check = o.getString("check"),
+                check = o.optString("check", ""),
                 onIf = regex(o.optString("onIf", "")),
                 controls = controls(o.optJSONArray("controls")),
                 install = o.optString("install", ""),
@@ -105,6 +107,8 @@ object Catalog {
             confirm = c.optString("confirm", ""),
             confirmOn = c.optString("confirmOn", ""),
             confirmOff = c.optString("confirmOff", ""),
+            preference = c.optString("preference", ""),
+            preferenceDefault = c.optBoolean("preferenceDefault", false),
             state = regex(c.optString("state", "")),
             on = c.optString("on", ""),
             off = c.optString("off", ""),

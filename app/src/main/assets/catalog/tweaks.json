@@ -1241,12 +1241,35 @@
       "name": "QuestEnhancer hooks",
       "area": "QuestEnhancer",
       "summary": "This app's Xposed hooks: hidden settings, dock pins, casting fixes.",
-      "author": "Anonymous950 (Anonymous941), the original QuestEnhancer; fork additions Bubbagum88",
+      "author": "Anonymous950, the original QuestEnhancer; fork additions Bubbagum88",
       "url": "https://github.com/Bubbagum88/QuestEnhancer",
       "licence": "GPL-3.0",
       "risk": "safe",
+      "after": "systemux",
       "check": "sh /data/adb/modules/zygisk_vector/cli scope ls org.codeberg.anonymous950.questenhancer",
-      "onIf": "com\\.oculus\\.systemux"
+      "onIf": "com\\.oculus\\.systemux",
+      "controls": [
+        {
+          "type": "switch",
+          "label": "Block device config updates",
+          "hint": "Prevents Meta from changing invisible settings in the background.",
+          "preference": "block_device_config_updates",
+          "preferenceDefault": false
+        },
+        {
+          "type": "switch",
+          "label": "Hide uninstalled apps",
+          "hint": "Normally, any apps you've ever installed to any device on your Meta account will permanently appear in the All and Uninstalled sections, and there's no way to remove them from your account. This hides them and removes the Uninstalled section entirely.",
+          "preference": "hide_uninstalled_apps",
+          "preferenceDefault": false
+        },
+        {
+          "type": "switch",
+          "label": "Show debug bar in the dock",
+          "preference": "enable_dock_debug_bar",
+          "preferenceDefault": true
+        }
+      ]
     }
   ]
 }

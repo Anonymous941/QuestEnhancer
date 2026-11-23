@@ -1,5 +1,6 @@
 package org.codeberg.anonymous950.questenhancer.manager
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
 import android.graphics.Color
@@ -14,6 +15,9 @@ import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.edit
+import androidx.core.graphics.toColorInt
+import androidx.core.view.isGone
 
 /**
  * Quest 1 Manager, laid out like Quest Settings: areas on the left, rows on the right.
@@ -37,6 +41,9 @@ class ManagerActivity : Activity() {
     private var loading = false
     /** A change was made that only shows after a restart (catalog "after": "reboot"). */
     private var rebootNeeded = false
+    private var systemUxRestartNeeded = false
+
+    private val preferences by lazy { getSharedPreferences("xposed_preferences", @Suppress("DEPRECATION") @SuppressLint("WorldReadableFiles") MODE_WORLD_READABLE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,6 +110,7 @@ class ManagerActivity : Activity() {
             if (loading) "Reading from the headset..." else "What is set on this headset now.",
             13f, dim).apply { setPadding(0, 0, 0, dp(16)) })
         if (rebootNeeded) content.addView(rebootRow())
+        if (systemUxRestartNeeded) content.addView(restartSystemUxRow())
         for (t in tweaks.filter { it.area == area }) content.addView(row(t))
     }
 
@@ -145,7 +153,7 @@ class ManagerActivity : Activity() {
                 isEnabled = false
             })
             setOnClickListener {
-                details.visibility = if (details.visibility == View.GONE) View.VISIBLE else View.GONE
+                details.visibility = if (details.isGone) View.VISIBLE else View.GONE
             }
         }
         return LinearLayout(this).apply {
@@ -184,13 +192,30 @@ class ManagerActivity : Activity() {
             else LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         when (c.type) {
             "switch" -> {
-                val isOn = c.state?.containsMatchIn(output) == true
+                val isOn = if (c.preference.isNotEmpty()) {
+                    preferences.getBoolean(c.preference, c.preferenceDefault)
+                } else {
+                    c.state?.containsMatchIn(output) == true
+                }
                 box.addView(Switch(this).apply {
                     isChecked = isOn
                     setOnCheckedChangeListener { _, checked ->
                         // Cancelled: redraw, which puts the switch back.
                         confirmThen(if (checked) c.confirmOn else c.confirmOff, { drawContent() }) {
-                            act(t, if (checked) c.on else c.off)
+                            if (c.preference.isNotEmpty()) {
+                                preferences.edit(commit = true) {
+                                    putBoolean(c.preference, checked)
+                                }
+
+                                if (checked && c.on.isNotEmpty()) act(t, c.on)
+                                else if (!checked && c.off.isNotEmpty()) act(t, c.off)
+                                else act(t, "")
+                                drawContent()
+                            } else {
+                                if (checked && c.on.isNotEmpty()) act(t, c.on)
+                                else if (!checked && c.off.isNotEmpty()) act(t, c.off)
+                                else act(t, "")
+                            }
                         }
                     }
                 })
@@ -214,7 +239,7 @@ class ManagerActivity : Activity() {
                 }
                 if (c.wheel) {
                     // A colour not among the presets shows on the Custom chip.
-                    val now = current?.takeIf { !matched }?.let { runCatching { Color.parseColor(it) }.getOrNull() }
+                    val now = current?.takeIf { !matched }?.let { runCatching { it.toColorInt() }.getOrNull() }
                     chips.addView(chip(Option("Custom", "", now ?: Color.GRAY), now != null) {
                         pickColor(now ?: Color.WHITE) { hex -> act(t, c.run.replace("{value}", hex)) }
                     }, lp())
@@ -346,7 +371,11 @@ class ManagerActivity : Activity() {
 
     /** Runs a control's command, then reads that tweak's state again. */
     private fun act(t: Tweak, command: String, showOutput: Boolean = false) {
-        if (command.isEmpty()) return
+        if (command.isEmpty()) {
+            if (t.after == "reboot") rebootNeeded = true
+            if (t.after == "systemux") systemUxRestartNeeded = true
+            return
+        }
         Thread {
             // Changes get longer than checks: ptcolor rewrites part of an APK copy.
             val r = RootShell.run(command, timeoutSeconds = 180)
@@ -358,6 +387,7 @@ class ManagerActivity : Activity() {
                 else {
                     if (showOutput && r.output.isNotEmpty()) Toast.makeText(this, r.output, Toast.LENGTH_LONG).show()
                     if (t.after == "reboot") rebootNeeded = true
+                    if (t.after == "systemux") systemUxRestartNeeded = true
                 }
                 drawContent()
             }
@@ -388,6 +418,27 @@ class ManagerActivity : Activity() {
         }
     }
 
+    private fun restartSystemUxRow() = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        setPadding(dp(20), dp(14), dp(20), dp(14))
+        background = rounded(selected)
+        addView(label("Restart SystemUX to see the change. This will not close your running apps.", 15f, Color.WHITE),
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        addView(label("Restart SystemUX", 15f, Color.WHITE, bold = true).apply {
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+            background = rounded(accent)
+            setOnClickListener {
+                systemUxRestartNeeded = false
+                drawContent()
+                Thread { RootShell.run("am force-stop com.oculus.systemux") }.start()
+            }
+        })
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = dp(12)
+        }
+    }
+
     /** All checks on one background thread through the one root shell. */
     private fun refresh(retryRoot: Boolean) {
         if (loading) return
@@ -398,7 +449,11 @@ class ManagerActivity : Activity() {
             if (retryRoot) RootShell.retry()
             for (t in tweaks) {
                 val v = bundled[t.bundle]?.let { installedVersion(it) }
-                val r = RootShell.run(t.check)
+                val r = if (t.check.isBlank()) {
+                    RootShell.Result(0, "")
+                } else {
+                    RootShell.run(t.check)
+                }
                 runOnUiThread {
                     if (v != null) installed[t.id] = v else installed.remove(t.id)
                     states[t.id] = r

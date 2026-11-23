@@ -34,21 +34,26 @@ abstract class BundleModules : DefaultTask() {
         val entries = modules.files.sortedBy { it.parentFile.name }.map { dir ->
             val fix = dir.parentFile.name
             val prop = dir.resolve("module.prop").readLines()
-                .mapNotNull { l -> l.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0].trim() to it[1].trim() } }
+                .mapNotNull { l ->
+                    l.split('=', limit = 2).takeIf { it.size == 2 }
+                        ?.let { it[0].trim() to it[1].trim() }
+                }
                 .toMap()
             ZipOutputStream(out.resolve("$fix.zip").outputStream()).use { zip ->
                 dir.walkTopDown()
                     .filter { it.isFile && it.name != ".gitkeep" }
                     .sortedBy { it.relativeTo(dir).invariantSeparatorsPath }
                     .forEach { f ->
-                        zip.putNextEntry(ZipEntry(f.relativeTo(dir).invariantSeparatorsPath).apply { time = 315532800000L })
+                        zip.putNextEntry(ZipEntry(f.relativeTo(dir).invariantSeparatorsPath).apply {
+                            time = 315532800000L
+                        })
                         f.inputStream().use { it.copyTo(zip) }
                         zip.closeEntry()
                     }
             }
             fun q(s: String) = "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
             "  ${q(fix)}: {\"id\": ${q(prop.getValue("id"))}, \"version\": ${q(prop["version"] ?: "")}, " +
-                "\"versionCode\": ${prop["versionCode"]?.toIntOrNull() ?: 0}}"
+                    "\"versionCode\": ${prop["versionCode"]?.toIntOrNull() ?: 0}}"
         }
         out.resolve("index.json").writeText("{\n" + entries.joinToString(",\n") + "\n}\n")
     }
@@ -93,11 +98,15 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlin {
-        jvmToolchain(8)
+        jvmToolchain(17)
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 }
 
@@ -108,6 +117,7 @@ androidComponents {
 }
 
 dependencies {
+    implementation(libs.core.ktx)
     implementation(libs.kotlin.reflect)
 
     compileOnly(libs.xposed)
