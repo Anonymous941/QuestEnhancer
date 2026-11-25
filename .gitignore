@@ -6,3 +6,4 @@
 /app/release
 /gradle
 /build/reports
+/local.properties
